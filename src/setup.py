@@ -4,7 +4,7 @@ import dmtcore
 
 METADATA = dict(
     name='dmtcore',
-    version=dmtcore.__version__,
+    version=(0,0,1),#dmtcore.__version__,
     author='Pablo Klijnan',
     author_email='pabloklijnjan@gmail.com',
     description='',
