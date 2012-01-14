@@ -1,2 +1,1 @@
-nose
-mock>=0.8.0beta4
+mock>=0.8.0rc2

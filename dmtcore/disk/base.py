@@ -5,7 +5,7 @@ class Disk(object):
         self._filepath = disk_entry.filepath
         self._size = disk_entry.size
         self._uuid = disk_entry.uuid
-        self._devno = disk_entry.devno
+        self._major_minor = disk_entry.major_minor
         """Tuple of major and minor numbers"""
         self._hctl = disk_entry.hctl
         """SCSI info: host, channel, scsi_id and lun"""
