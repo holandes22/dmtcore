@@ -65,10 +65,9 @@ class MultipathDisk(BasicDisk):
     def get_active_path_count(self):
         return len([path for path in self.paths if path.is_active()])
 
-class Path(Disk):
+class Path(object):
 
-    def __init__(self, disk_entry, path_entry):
-        super(Path, self).__init__(disk_entry)
+    def __init__(self, path_entry):
         self._state = path_entry.state
         """Physical path state"""
         self._mapper_path_state = path_entry.mapper_path_state
