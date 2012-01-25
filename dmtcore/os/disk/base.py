@@ -7,10 +7,9 @@ HctlInfo = namedtuple("HctlInfo", "host,channel,scsi_id,lun_id")
 
 class DiskEntry(object):
     
-    def __init__(self, name, filepath, raw_filepath, size, hctl):
+    def __init__(self, name, filepath, size, hctl):
         self.name = name
         self.filepath = filepath
-        self.raw_filepath = raw_filepath
         self.size = size
         self.hctl = hctl
         
@@ -25,6 +24,12 @@ class DiskDeviceQueries(object):
         self.basic_disk_entries = []
         self.multipath_disk_entries = []
         self._populate_disks_entries()
+        
+    def get_basic_disk_entries(self):
+        return self.basic_disk_entries
+    
+    def get_multipath_disk_entries(self):
+        return self.multipath_disk_entries
                 
     def _populate_disks_entries(self):
         raise NotImplementedError()
