@@ -1,3 +1,4 @@
+import os
 import re
 from glob import glob
 
@@ -11,25 +12,28 @@ from dmtcore.os.disk.base import DiskEntry, HctlInfo
 #def list_disks():
 #    return "NEW - %s" % (run_cmd(FDISK_LIST),)
 
-DEV_ROOT_PATH = '/dev'
-
 SIZE_FROM_FDISK = ['/sbin/fdisk', '-l']
 
 class LinuxDiskEntry(DiskEntry):
     
-    def __init__(self, name, filepath, size, hctl, uuid):
-        super(LinuxDiskEntry, self).__init__(name, filepath, size, hctl)
+    def __init__(self, name, filepath, size, uuid):
+        super(LinuxDiskEntry, self).__init__(name, filepath, size)
         self.uuid = uuid
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
     
     def _populate_disks_entries(self):
-        for filepath in glob('%s/sd*[!0-9]' % DEV_ROOT_PATH):
-            name = filepath[len(DEV_ROOT_PATH):]
+        disk_names = []
+        for filepath in glob('/dev/sd*[!0-9]'):
+            name = os.path.basename(filepath)
+            disk_names.append(name)
             size = self._extract_size_from_fdisk(filepath)
-            h, c, t, l = self.extract_hctl_from_sys_folder(name)
+            h, c, t, l = self.get_hctl(name)
             hctl = HctlInfo(host = h, channel = c, scsi_id = t, lun_id = l)
             self.basic_disk_entries.append(DiskEntry(name, filepath, size, hctl ))
+        
+        self.all_hctls = self._extract_all_hctls_from_proc_scsi_file()
+        self.hctl_map = self._map_hctl_to_disk_device_names(disk_names)
     
     def _device_name_is_partition(self, device_name):
         """
@@ -47,7 +51,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         """
         #parse Disk /dev/sda: 8185 MB, 8185184256 bytes
         dev_re = re.compile("^Disk\s\/dev\/sd.*$")
-        for line in run_cmd(SIZE_FROM_FDISK).split("\n"):
+        for line in run_cmd(SIZE_FROM_FDISK).splitlines():
             if dev_re.match(line) is not None:
                 size = line.split(",")[1].split()[0]
                 try:
@@ -56,5 +60,43 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                     return None    
         return None
     
-    def _extract_hctl_from_sys_folder(self, device_name):
-        pass
+    def get_hctl(self, device_name):
+        try:
+            return self.hctl_map[device_name]
+        except KeyError:
+            return None
+  
+    def _map_hctl_to_disk_device_names(self, device_names):
+        hctl_map = []
+        for device_name in device_names:
+            for hctl in self.all_hctls:
+                d =  {'name': device_name,'h': hctl.host, 'c': hctl.channel, 't': hctl.scsi_id, 'l': hctl.lun_id}
+                path = "/sys/block/{name}/device/disk_scsi:{h}:{c}:{t}:{l}".format(**d)
+                if os.path.exists(path):
+                    hctl_map[device_name] = hctl
+        return hctl_map
+    
+    def _extract_all_hctls_from_proc_scsi_file(self):
+        hctls = []
+        hctl_line_re= re.compile("""
+                                    Host:\s*\w*(?P<host>\d+)\s*
+                                    Channel:\s*(?P<channel>\d+)\s*
+                                    Id:\s*(?P<scsi_id>\d+)\s*
+                                    Lun:\s+(?P<lun_id>\d+)\s*
+                                """, re.VERBOSE)
+
+        
+        with open("/proc/scsi/scsi", "r") as f:
+            for line in f.readlines():
+                m = hctl_line_re.match(line)
+                if m is not None:
+                    hctls.append(
+                                 HctlInfo(
+                                          host = int(m.group("host")),
+                                          channel = int(m.group("channel")),
+                                          scsi_id = int(m.group("scsi_id")),
+                                          lun_id = int(m.group("lun_id"))
+                                          )
+                                 )
+        return hctls
+    

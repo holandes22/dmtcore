@@ -7,11 +7,10 @@ HctlInfo = namedtuple("HctlInfo", "host,channel,scsi_id,lun_id")
 
 class DiskEntry(object):
     
-    def __init__(self, name, filepath, size, hctl):
+    def __init__(self, name, filepath, size):
         self.name = name
         self.filepath = filepath
         self.size = size
-        self.hctl = hctl
         
 class PathEntry(object):
     
