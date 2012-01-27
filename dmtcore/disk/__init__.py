@@ -1,1 +1,1 @@
-from dmtcore.disk.base import get_all_disks
+from dmtcore.disk.base import get_disks

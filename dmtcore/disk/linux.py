@@ -1,4 +1,4 @@
-from dmtcore.storage.base import BasicDisk, DiskPartition, MultipathDisk, Path, PathGroup
+from dmtcore.disk.base import BasicDisk, DiskPartition, MultipathDisk, Path, PathGroup
 
 def get_all_disks():
     pass

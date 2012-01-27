@@ -14,8 +14,9 @@ def run_cmd(cmd):
     if cmd not in APPROVED_CMDS:
         raise AttributeError
     try:
+        #TODO: log INFO running cmd blah
         return check_output(cmd, stderr = STDOUT)
     except CalledProcessError:
-        #log error and error.returncode
+        #TODO: log ERROR error and error.returncode
         raise
 
