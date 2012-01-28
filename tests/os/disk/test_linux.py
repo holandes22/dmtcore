@@ -1,6 +1,5 @@
 import unittest
-import StringIO
-from mock import patch, Mock, MagicMock
+from mock import patch, MagicMock
 
 from dmtcore.os.disk import linux
 from dmtcore.os.disk.base import HctlInfo

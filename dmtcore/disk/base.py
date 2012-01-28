@@ -1,33 +1,29 @@
 class Disk(object):
     
     def __init__(self, disk_entry):
-        self._name = disk_entry.name
-        self._filepath = disk_entry.filepath
-        self._size = disk_entry.size
-        self._major_minor = disk_entry.major_minor
+        self.name = disk_entry.name
+        self.filepath = disk_entry.filepath
+        self.size = disk_entry.size
+        self.major_minor = disk_entry.major_minor
         """Tuple of major and minor numbers"""
-        self._hctl = disk_entry.hctl
+        self.hctl = disk_entry.hctl
         """SCSI info: host, channel, scsi_id and lun"""
-        
-    @property
-    def name(self):
-        return self._name
 
-    @property
-    def filepath(self):
-        return self._filepath
-    
-    @property
-    def size(self):
-        return self._size
-    
-    @property
-    def major_minor(self):
-        return self._major_minor
-    
-    @property
-    def hctl(self):
-        return self._hctl
+    def get_name(self):
+        return self.name
+
+    def get_filepath(self):
+        return self.filepath
+
+    def get_size(self):
+        return self.size
+
+    def get_major_minor(self):
+        return self.major_minor
+
+    def get_hctl(self):
+        return self.hctl
+
 
 class DiskPartition(Disk):
     
@@ -39,6 +35,7 @@ class BasicDisk(Disk):
 
     def __init__(self, disk_entry):
         super(BasicDisk, self).__init__(disk_entry)
+        self.partitions = None
         self._generate_partitions()
 
     def get_partitions(self):
@@ -51,6 +48,8 @@ class MultipathDisk(BasicDisk):
     
     def __init__(self, disk_entry):
         super(MultipathDisk, self).__init__(disk_entry)
+        self.paths = None
+        self.path_groups = None
         self._generate_paths()
 
     def _generate_paths(self):
@@ -75,23 +74,18 @@ class MultipathDisk(BasicDisk):
 class Path(object):
 
     def __init__(self, path_entry):
-        self._state = path_entry.state
+        self.state = path_entry.state
         """Physical path state"""
-        self._mapper_path_state = path_entry.mapper_path_state
+        self.mapper_path_state = path_entry.mapper_path_state
         """Mapper path state. e.g. DM on Linux"""
 
     def is_active(self):
-        return self._state == 'active'
+        return self.state == 'active'
 
 class PathGroup(object):
 
     def __init__(self, paths):
-        self._paths = paths
-    
-    @property
-    def paths(self):
-        return self._paths
-
+        self.paths = paths
 
 def get_disks():
     return []
