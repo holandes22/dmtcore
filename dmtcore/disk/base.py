@@ -4,7 +4,6 @@ class Disk(object):
         self._name = disk_entry.name
         self._filepath = disk_entry.filepath
         self._size = disk_entry.size
-        self._uuid = disk_entry.uuid
         self._major_minor = disk_entry.major_minor
         """Tuple of major and minor numbers"""
         self._hctl = disk_entry.hctl
@@ -21,6 +20,14 @@ class Disk(object):
     @property
     def size(self):
         return self._size
+    
+    @property
+    def major_minor(self):
+        return self._major_minor
+    
+    @property
+    def hctl(self):
+        return self._hctl
 
 class DiskPartition(Disk):
     
@@ -32,7 +39,7 @@ class BasicDisk(Disk):
 
     def __init__(self, disk_entry):
         super(BasicDisk, self).__init__(disk_entry)
-        self._generate_partions()
+        self._generate_partitions()
 
     def get_partitions(self):
         return self.partitions

@@ -5,7 +5,7 @@ from mock import patch, Mock, MagicMock
 from dmtcore.os.disk import linux
 from dmtcore.os.disk.base import HctlInfo
 from dmtcore.os.disk.linux import LinuxDiskDeviceQueries
-from dmtcore.os.disk.linux import SIZE_FROM_FDISK
+from dmtcore.os.commands import SIZE_FROM_FDISK
 
 
 FAKE_FDISK_GOOD_OUTPUT = """

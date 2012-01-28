@@ -2,7 +2,11 @@ import os
 import re
 from glob import glob
 
+from dmtcore.os.disk.common import get_major_minor
+
 from dmtcore.os.commands import run_cmd
+from dmtcore.os.commands import SIZE_FROM_FDISK
+
 from dmtcore.os.disk.base import DiskDeviceQueries
 from dmtcore.os.disk.base import DiskEntry, HctlInfo
 
@@ -12,28 +16,21 @@ from dmtcore.os.disk.base import DiskEntry, HctlInfo
 #def list_disks():
 #    return "NEW - %s" % (run_cmd(FDISK_LIST),)
 
-SIZE_FROM_FDISK = ['/sbin/fdisk', '-l']
-
-class LinuxDiskEntry(DiskEntry):
-    
-    def __init__(self, name, filepath, size, uuid):
-        super(LinuxDiskEntry, self).__init__(name, filepath, size)
-        self.uuid = uuid
-
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
     
     def _populate_disks_entries(self):
-        disk_names = []
-        for filepath in glob('/dev/sd*[!0-9]'):
-            name = os.path.basename(filepath)
-            disk_names.append(name)
-            size = self._extract_size_from_fdisk(filepath)
-            h, c, t, l = self.get_hctl(name)
-            hctl = HctlInfo(host = h, channel = c, scsi_id = t, lun_id = l)
-            self.basic_disk_entries.append(DiskEntry(name, filepath, size, hctl ))
+        device_filepaths = glob('/dev/sd*[!0-9]')
+        device_names = [os.path.basename(device_filepath) for device_filepath in device_filepaths]
+        self.hctl_map = self._map_hctl_to_disk_device_names(device_names)
         
-        self.hctl_map = self._map_hctl_to_disk_device_names(disk_names)
+        for device_filepath, device_name in map(None, device_filepaths, device_names):
+            size = self._extract_size_from_fdisk(device_filepath)
+            hctl = self.get_hctl(device_name)
+            major_minor = get_major_minor(device_filepath)
+            self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor, hctl))
     
+        self.multipath_disk_entries = []
+        
     def _device_name_is_partition(self, device_name):
         """
         Receives a device name and indicates if it is a partition or not:
