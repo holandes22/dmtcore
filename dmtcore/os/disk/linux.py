@@ -25,9 +25,8 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         
         for device_filepath, device_name in map(None, device_filepaths, device_names):
             size = self._extract_size_from_fdisk(device_filepath)
-            hctl = self.get_hctl(device_name)
             major_minor = get_major_minor(device_filepath)
-            self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor, hctl))
+            self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor))
     
         self.multipath_disk_entries = []
         

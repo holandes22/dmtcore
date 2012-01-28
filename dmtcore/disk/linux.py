@@ -6,13 +6,14 @@ def get_all_disks():
     all_disks = []
     linux_disk_device_queries = LinuxDiskDeviceQueries()
     for basic_disk_entry in linux_disk_device_queries.get_basic_disk_entries():
-        all_disks.append(LinuxDisk(basic_disk_entry, "fake-uuid"))
+        hctl = linux_disk_device_queries.get_hctl(basic_disk_entry.name)
+        all_disks.append(LinuxDisk(basic_disk_entry, hctl, "fake-uuid"))
     return all_disks
 
 class LinuxDisk(BasicDisk):
     
-    def __init__(self, disk_entry, uuid):
-        super(LinuxDisk, self).__init__(disk_entry)
+    def __init__(self, disk_entry, hctl, uuid):
+        super(LinuxDisk, self).__init__(disk_entry, hctl)
         self.uuid = uuid
 
     def _generate_partitions(self):

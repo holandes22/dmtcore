@@ -7,17 +7,18 @@ HctlInfo = namedtuple("HctlInfo", "host,channel,scsi_id,lun_id")
 
 class DiskEntry(object):
     
-    def __init__(self, name, filepath, size, major_minor, hctl):
+    def __init__(self, name, filepath, size, major_minor):
         self.name = name
         self.filepath = filepath
         self.size = size
         self.major_minor = major_minor
-        self.hctl = hctl
+
         
 class PathEntry(object):
     
     def __init__(self, state):
         self.state = state
+
 
 class DiskDeviceQueries(object):
     

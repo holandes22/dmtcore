@@ -9,7 +9,7 @@ APPROVED_CMDS = [
                  ]
 
 def run_cmd(cmd, run_as_sudo = True):
-    #For dynamic cmds, usuAPPROVED_CMDSally the last arg is the one added dinamically
+    #For dynamic cmds, usually the last arg is the one added dinamically
     #TODO: Find a better wat to deal with this: issue 6
     if cmd[:-1] in APPROVED_CMDS or cmd in APPROVED_CMDS:
         try:

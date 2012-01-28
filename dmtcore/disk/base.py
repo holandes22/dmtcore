@@ -5,9 +5,6 @@ class Disk(object):
         self.filepath = disk_entry.filepath
         self.size = disk_entry.size
         self.major_minor = disk_entry.major_minor
-        """Tuple of major and minor numbers"""
-        self.hctl = disk_entry.hctl
-        """SCSI info: host, channel, scsi_id and lun"""
 
     def get_name(self):
         return self.name
@@ -19,10 +16,10 @@ class Disk(object):
         return self.size
 
     def get_major_minor(self):
+        """
+        Tuple of major and minor numbers
+        """
         return self.major_minor
-
-    def get_hctl(self):
-        return self.hctl
 
 
 class DiskPartition(Disk):
@@ -33,8 +30,9 @@ class DiskPartition(Disk):
 
 class BasicDisk(Disk):
 
-    def __init__(self, disk_entry):
+    def __init__(self, disk_entry, hctl):
         super(BasicDisk, self).__init__(disk_entry)
+        self.hctl = hctl
         self.partitions = None
         self._generate_partitions()
 
@@ -43,6 +41,12 @@ class BasicDisk(Disk):
 
     def _generate_partitions(self):
         raise NotImplementedError()
+    
+    def get_hctl(self):
+        """
+        SCSI info: host, channel, scsi_id and lun
+        """
+        return self.hctl
 
 class MultipathDisk(BasicDisk):
     
@@ -53,7 +57,9 @@ class MultipathDisk(BasicDisk):
         self._generate_paths()
 
     def _generate_paths(self):
-        """Populates the path and path_groups properties"""
+        """
+        Populates the path and path_groups properties
+        """
         raise NotImplementedError()
 
     def get_path_groups(self):
