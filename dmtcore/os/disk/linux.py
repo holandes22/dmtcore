@@ -32,7 +32,6 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             hctl = HctlInfo(host = h, channel = c, scsi_id = t, lun_id = l)
             self.basic_disk_entries.append(DiskEntry(name, filepath, size, hctl ))
         
-        self.all_hctls = self._extract_all_hctls_from_proc_scsi_file()
         self.hctl_map = self._map_hctl_to_disk_device_names(disk_names)
     
     def _device_name_is_partition(self, device_name):
@@ -51,7 +50,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         """
         #parse Disk /dev/sda: 8185 MB, 8185184256 bytes
         dev_re = re.compile("^Disk\s\/dev\/sd.*$")
-        for line in run_cmd(SIZE_FROM_FDISK).splitlines():
+        for line in run_cmd(SIZE_FROM_FDISK + [device_filepath]).splitlines():
             if dev_re.match(line) is not None:
                 size = line.split(",")[1].split()[0]
                 try:
@@ -65,13 +64,18 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             return self.hctl_map[device_name]
         except KeyError:
             return None
+    
+    def _get_all_hctls(self):
+        if getattr(self, '_all_hctls', None) is None:
+            self._all_hctls =  self._extract_all_hctls_from_proc_scsi_file()
+        return self._all_hctls 
   
     def _map_hctl_to_disk_device_names(self, device_names):
-        hctl_map = []
+        hctl_map = {}
         for device_name in device_names:
-            for hctl in self.all_hctls:
+            for hctl in self._get_all_hctls():
                 d =  {'name': device_name,'h': hctl.host, 'c': hctl.channel, 't': hctl.scsi_id, 'l': hctl.lun_id}
-                path = "/sys/block/{name}/device/disk_scsi:{h}:{c}:{t}:{l}".format(**d)
+                path = "/sys/block/{name}/device/scsi_disk:{h}:{c}:{t}:{l}".format(**d)
                 if os.path.exists(path):
                     hctl_map[device_name] = hctl
         return hctl_map

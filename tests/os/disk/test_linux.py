@@ -5,6 +5,8 @@ from mock import patch, Mock, MagicMock
 from dmtcore.os.disk import linux
 from dmtcore.os.disk.base import HctlInfo
 from dmtcore.os.disk.linux import LinuxDiskDeviceQueries
+from dmtcore.os.disk.linux import SIZE_FROM_FDISK
+
 
 FAKE_FDISK_GOOD_OUTPUT = """
 Disk /dev/sda: 8185 MB, 8185184256 bytes
@@ -74,7 +76,10 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
     def test__extract_size_from_fdisk_good_output(self, _populate_disks_entries_mock, run_cmd_mock):
         run_cmd_mock.return_value = FAKE_FDISK_GOOD_OUTPUT
         dq = LinuxDiskDeviceQueries()
-        self.assertEqual(8185184256, dq._extract_size_from_fdisk("/dev/sda"))
+        fake_device_filepath = "/dev/sda"
+        actual_size = dq._extract_size_from_fdisk(fake_device_filepath)
+        run_cmd_mock.assert_called_once_with(SIZE_FROM_FDISK + [fake_device_filepath])
+        self.assertEqual(8185184256, actual_size)
 
     @patch.object(linux, "run_cmd")
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
@@ -84,17 +89,22 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         self.assertEqual(None, dq._extract_size_from_fdisk("/dev/sda"))
     
     @patch('os.path.exists', new = fake_path_exists)
+    @patch.object(LinuxDiskDeviceQueries, "_get_all_hctls")
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")    
-    def test__map_hctl_to_disk_device_name(self, _populate_disks_entries_mock):
-        fake_hctl_map = {
+    def test__map_hctl_to_disk_device_name(self, _populate_disks_entries_mock, get_all_hctls_mock):
+        get_all_hctls_mock.return_value = [
+                                           HctlInfo(0,0,0,0), 
+                                           HctlInfo(1,0,2,0), 
+                                           HctlInfo(1,0,2,1), 
+                                           HctlInfo(0,0,0,0),
+                                           ]
+        expected_hctl_map = {
                            'sda':HctlInfo(0,0,0,0),
                            'sdb':HctlInfo(1,0,2,0),
                            'sdc':HctlInfo(1,0,2,1),
                            }
         dq = LinuxDiskDeviceQueries()
-        #test all possible paths
-        #path_exists_mock.assert_called_with("/sys/block/sda/device/scsi_disk:0:0:0:0")
-        self.assertEqual(fake_hctl_map, dq._map_hctl_to_disk_device_names(fake_hctl_map.keys()))
+        self.assertEqual(expected_hctl_map, dq._map_hctl_to_disk_device_names(expected_hctl_map.keys()))
     
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")    
     def test__extract_all_hctls_from_proc_scsi_file(self, _populate_disks_entries_mock):
@@ -116,6 +126,7 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
                                ]
             actual_results = dq._extract_all_hctls_from_proc_scsi_file()
             self.assertEqual(len(expected_results), len(actual_results))
+            
             for expected_result, actual_result in map(None, expected_results, actual_results):
                 self.assertEqual(expected_result, actual_result)
     
