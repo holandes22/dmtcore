@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from glob import glob
 
 from dmtcore.os.disk.common import get_major_minor
@@ -15,6 +16,8 @@ from dmtcore.os.disk.base import DiskEntry, HctlInfo
 #
 #def list_disks():
 #    return "NEW - %s" % (run_cmd(FDISK_LIST),)
+
+module_logger = logging.getLogger("dmtcore.os.disk.linux")
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
     
@@ -52,6 +55,8 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                 try:
                     return int(size)
                 except ValueError:
+                    module_logger.warning("Cannot get size for device {0}.\
+                                                            Output: {1}".format(device_filepath, size))
                     return None    
         return None
     
@@ -59,6 +64,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         try:
             return self.hctl_map[device_name]
         except KeyError:
+            module_logger.warning("Cannot get hctl for device {0}".format(device_name))
             return None
     
     def _get_all_hctls(self):
