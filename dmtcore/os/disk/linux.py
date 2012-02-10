@@ -32,7 +32,25 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor))
     
         self.multipath_disk_entries = []
+    
+    def get_partition_entries(self, device_name):
+        return self._get_sysfs_partitions(device_name)
         
+    def _get_sysfs_partitions(self, device_name):
+        partitions = []
+        partition_filepaths = glob('/dev/%s[0-9]*' % device_name)
+        for partition_filepath in partition_filepaths:
+            size = self._extract_size_from_fdisk(partition_filepath)
+            major_minor = get_major_minor(partition_filepath)
+            partitions.append(DiskEntry(
+                                        os.path.basename(partition_filepath), 
+                                        partition_filepath, 
+                                        size, 
+                                        major_minor,
+                                        )
+                              )
+        return partitions
+    
     def _device_name_is_partition(self, device_name):
         """
         Receives a device name and indicates if it is a partition or not:
@@ -48,7 +66,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         :rtype: int or None if an error occured obtaining the value
         """
         #parse Disk /dev/sda: 8185 MB, 8185184256 bytes
-        dev_re = re.compile("^Disk\s\/dev\/sd.*$")
+        dev_re = re.compile("^Disk\s\/dev\/sd.*:")
         for line in run_cmd(SIZE_FROM_FDISK + [device_filepath]).splitlines():
             if dev_re.match(line) is not None:
                 size = line.split(",")[1].split()[0]

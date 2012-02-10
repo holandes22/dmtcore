@@ -2,7 +2,7 @@ import unittest
 from mock import patch, MagicMock
 
 from dmtcore.os.disk import linux
-from dmtcore.os.disk.base import HctlInfo
+from dmtcore.os.disk.base import HctlInfo, DiskEntry
 from dmtcore.os.disk.linux import LinuxDiskDeviceQueries
 from dmtcore.os.commands import SIZE_FROM_FDISK
 
@@ -15,6 +15,17 @@ Units = cylinders of 16065 * 512 = 8225280 bytes
    Device Boot      Start         End      Blocks   Id  System
 /dev/sda1   *           1          13      104391   83  Linux
 /dev/sda2              14         995     7887915   8e  Linux LVM
+"""
+
+FAKE_FDISK_GOOD_OUTPUT_PARTITION = """
+Disk /dev/sda6: 126.0 GB, 125998989312 bytes
+255 heads, 63 sectors/track, 15318 cylinders, total 246091776 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+Disk /dev/sda6 doesn't contain a valid partition table
 """
 
 FAKE_FDISK_BAD_OUTPUT = ""
@@ -79,6 +90,16 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         actual_size = dq._extract_size_from_fdisk(fake_device_filepath)
         run_cmd_mock.assert_called_once_with(SIZE_FROM_FDISK + [fake_device_filepath])
         self.assertEqual(8185184256, actual_size)
+        
+    @patch.object(linux, "run_cmd")
+    @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
+    def test__extract_size_from_fdisk_good_output_partition(self, _populate_disks_entries_mock, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_FDISK_GOOD_OUTPUT_PARTITION
+        dq = LinuxDiskDeviceQueries()
+        fake_device_filepath = "/dev/sda6"
+        actual_size = dq._extract_size_from_fdisk(fake_device_filepath)
+        run_cmd_mock.assert_called_once_with(SIZE_FROM_FDISK + [fake_device_filepath])
+        self.assertEqual(125998989312, actual_size)
 
     @patch.object(linux, "run_cmd")
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
@@ -129,3 +150,24 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
             for expected_result, actual_result in map(None, expected_results, actual_results):
                 self.assertEqual(expected_result, actual_result)
     
+    @patch.object(linux, 'get_major_minor', new = lambda x: (250, int(x[-1])))
+    @patch.object(linux, 'glob')            
+    @patch.object(LinuxDiskDeviceQueries, "_extract_size_from_fdisk")
+    @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
+    def test__get_sysfs_partitions(self, _populate_disks_entries_mock, extract_size_mock, glob_mock):
+        glob_mock.return_value = ['/dev/sda1', '/dev/sda2', '/dev/sda3']
+        fake_size = 1024
+        extract_size_mock.return_value = fake_size
+        dq = LinuxDiskDeviceQueries()
+        expected_results = [
+                            DiskEntry('sda1', '/dev/sda1', fake_size, (250, 1)),
+                            DiskEntry('sda2', '/dev/sda2', fake_size, (250, 2)),
+                            DiskEntry('sda3', '/dev/sda3', fake_size, (250, 3)),
+                            ] 
+        actual_results = dq._get_sysfs_partitions('sda')
+        self.assertEqual(len(expected_results), len(actual_results))
+        for expected_result, actual_result in map(None, expected_results, actual_results):
+            self.assertEqual(expected_result.name, actual_result.name)
+            self.assertEqual(expected_result.filepath, actual_result.filepath)
+            self.assertEqual(expected_result.size, actual_result.size)
+            self.assertEqual(expected_result.major_minor, actual_result.major_minor)

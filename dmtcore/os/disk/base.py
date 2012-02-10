@@ -12,6 +12,15 @@ class DiskEntry(object):
         self.filepath = filepath
         self.size = size
         self.major_minor = major_minor
+        
+    def __str__(self):
+        return "%s(name=%s, filepath=%s, size=%s, major_minor=%s)" % (
+                                                                      self.__class__.__name__, 
+                                                                      self.name,
+                                                                      self.filepath,
+                                                                      self.size,
+                                                                      self.major_minor
+                                                                      )
 
         
 class PathEntry(object):

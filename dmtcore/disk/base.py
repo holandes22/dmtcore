@@ -34,9 +34,11 @@ class BasicDisk(Disk):
         super(BasicDisk, self).__init__(disk_entry)
         self.hctl = hctl
         self.partitions = None
-        self._generate_partitions()
+        
 
     def get_partitions(self):
+        if getattr(self, 'partitions', None) is None:
+            self._generate_partitions()
         return self.partitions
 
     def _generate_partitions(self):
