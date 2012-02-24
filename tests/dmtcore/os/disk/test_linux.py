@@ -171,3 +171,4 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
             self.assertEqual(expected_result.filepath, actual_result.filepath)
             self.assertEqual(expected_result.size, actual_result.size)
             self.assertEqual(expected_result.major_minor, actual_result.major_minor)
+

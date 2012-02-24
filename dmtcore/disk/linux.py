@@ -1,4 +1,3 @@
-
 from dmtcore.os.disk.linux import LinuxDiskDeviceQueries
 from dmtcore.disk.base import BasicDisk, DiskPartition, MultipathDisk, Path, PathGroup
 
