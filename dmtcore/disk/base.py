@@ -95,7 +95,4 @@ class PathGroup(object):
     def __init__(self, paths):
         self.paths = paths
 
-def get_disks():
-    return []
-
 

@@ -1,3 +1,4 @@
+import os
 import logging
 from subprocess import check_output, STDOUT, CalledProcessError
 
@@ -15,7 +16,7 @@ def run_cmd(cmd, run_as_sudo = True):
     #TODO: Find a better wat to deal with this: issue 6
     if cmd[:-1] in APPROVED_CMDS or cmd in APPROVED_CMDS:
         try:
-            if run_as_sudo:
+            if run_as_sudo or os.geteuid() != 0:
                 cmd.insert(0, "sudo")
             module_logger.info("Running command {0}".format(cmd))
             return check_output(cmd, stderr = STDOUT)

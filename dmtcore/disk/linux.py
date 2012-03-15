@@ -1,7 +1,7 @@
 from dmtcore.os.disk.linux import LinuxDiskDeviceQueries
 from dmtcore.disk.base import BasicDisk, DiskPartition, MultipathDisk, Path, PathGroup
 
-def get_all_disks():
+def get_disks():
     all_disks = []
     linux_disk_device_queries = LinuxDiskDeviceQueries()
     for basic_disk_entry in linux_disk_device_queries.get_basic_disk_entries():
