@@ -11,13 +11,10 @@ from dmtcore.os.commands import SIZE_FROM_FDISK
 from dmtcore.os.disk.base import DiskDeviceQueries
 from dmtcore.os.disk.base import DiskEntry, HctlInfo
 
-#From dmtcore.os.linux.basic
-#from dmtcore.os.commands import run_cmd, FDISK_LIST
-#
-#def list_disks():
-#    return "NEW - %s" % (run_cmd(FDISK_LIST),)
-
 module_logger = logging.getLogger("dmtcore.os.disk.linux")
+
+class LinuxDeviceMapper(object):
+    pass
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
     
@@ -61,7 +58,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         return  re.compile("^\w+\d+$").match(device_name) is not None
     
     def _extract_size_from_fdisk(self, device_filepath):
-        """
+        """/sys/block/sda/device/block/sda
         :returns: The size in bytes of the specified device
         :rtype: int or None if an error occured obtaining the value
         """

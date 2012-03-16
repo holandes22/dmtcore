@@ -1,4 +1,7 @@
 class Disk(object):
+    """
+    Base interface for disk objects
+    """
     
     def __init__(self, disk_entry):
         self.name = disk_entry.name
@@ -17,7 +20,7 @@ class Disk(object):
 
     def get_major_minor(self):
         """
-        Tuple of major and minor numbers
+        Named tuple of major and minor numbers
         """
         return self.major_minor
 
@@ -29,12 +32,14 @@ class DiskPartition(Disk):
         self.parent = parent
 
 class BasicDisk(Disk):
+    """
+    Represents a basic (local, non-multipath) disk
+    """
 
     def __init__(self, disk_entry, hctl):
         super(BasicDisk, self).__init__(disk_entry)
         self.hctl = hctl
         self.partitions = None
-        
 
     def get_partitions(self):
         if getattr(self, 'partitions', None) is None:
@@ -80,6 +85,9 @@ class MultipathDisk(BasicDisk):
         return len([path for path in self.paths if path.is_active()])
 
 class Path(object):
+    """
+    Represents a path on a multipath disk
+    """
 
     def __init__(self, path_entry):
         self.state = path_entry.state
@@ -91,7 +99,10 @@ class Path(object):
         return self.state == 'active'
 
 class PathGroup(object):
-
+    """
+    Represents a group of paths from a multipath disk. 
+    This is not neccessarily relevant for all platforms (Linux has this concept, but HP-UX no for instance)
+    """
     def __init__(self, paths):
         self.paths = paths
 
