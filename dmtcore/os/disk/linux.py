@@ -17,22 +17,22 @@ class LinuxDeviceMapper(object):
     pass
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
-    
+
     def _populate_disks_entries(self):
         device_filepaths = glob('/dev/sd*[!0-9]')
         device_names = [os.path.basename(device_filepath) for device_filepath in device_filepaths]
         self.hctl_map = self._map_hctl_to_disk_device_names(device_names)
-        
+
         for device_filepath, device_name in map(None, device_filepaths, device_names):
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
             self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor))
-    
+
         self.multipath_disk_entries = []
-    
+
     def get_partition_entries(self, device_name):
         return self._get_sysfs_partitions(device_name)
-        
+
     def _get_sysfs_partitions(self, device_name):
         partitions = []
         partition_filepaths = glob('/dev/%s[0-9]*' % device_name)
@@ -40,14 +40,14 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             size = self._extract_size_from_fdisk(partition_filepath)
             major_minor = get_major_minor(partition_filepath)
             partitions.append(DiskEntry(
-                                        os.path.basename(partition_filepath), 
-                                        partition_filepath, 
-                                        size, 
+                                        os.path.basename(partition_filepath),
+                                        partition_filepath,
+                                        size,
                                         major_minor,
                                         )
                               )
         return partitions
-    
+
     def _device_name_is_partition(self, device_name):
         """
         Receives a device name and indicates if it is a partition or not:
@@ -56,7 +56,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         sda1b, /dev/sda1 ->False, not valid input
         """
         return  re.compile("^\w+\d+$").match(device_name) is not None
-    
+
     def _extract_size_from_fdisk(self, device_filepath):
         """/sys/block/sda/device/block/sda
         :returns: The size in bytes of the specified device
@@ -72,31 +72,30 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                 except ValueError:
                     module_logger.warning("Cannot get size for device {0}.\
                                                             Output: {1}".format(device_filepath, size))
-                    return None    
+                    return None
         return None
-    
+
     def get_hctl(self, device_name):
         try:
             return self.hctl_map[device_name]
         except KeyError:
             module_logger.warning("Cannot get hctl for device {0}".format(device_name))
             return None
-    
-    def _get_all_hctls(self):
-        if getattr(self, '_all_hctls', None) is None:
-            self._all_hctls =  self._extract_all_hctls_from_proc_scsi_file()
-        return self._all_hctls 
-  
+
     def _map_hctl_to_disk_device_names(self, device_names):
         hctl_map = {}
         for device_name in device_names:
-            for hctl in self._get_all_hctls():
-                d =  {'name': device_name,'h': hctl.host, 'c': hctl.channel, 't': hctl.scsi_id, 'l': hctl.lun_id}
-                path = "/sys/block/{name}/device/scsi_disk:{h}:{c}:{t}:{l}".format(**d)
-                if os.path.exists(path):
-                    hctl_map[device_name] = hctl
+            hctl_map[device_name] = self._extract_hctl_from_device_link(device_name)
         return hctl_map
-    
+
+    def _extract_hctl_from_device_link(self, device_name):
+        path = "/sys/block/{0}/device".format(device_name)
+        try:
+            h,c,t,l = os.readlink(path).split("/")[-1].split(":")
+        except OSError:
+            return None
+        return HctlInfo(int(h),int(c),int(t),int(l))
+
     def _extract_all_hctls_from_proc_scsi_file(self):
         hctls = []
         hctl_line_re= re.compile("""
@@ -106,7 +105,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                                     Lun:\s+(?P<lun_id>\d+)\s*
                                 """, re.VERBOSE)
 
-        
+
         with open("/proc/scsi/scsi", "r") as f:
             for line in f.readlines():
                 m = hctl_line_re.match(line)
@@ -120,4 +119,4 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                                           )
                                  )
         return hctls
-    
+
