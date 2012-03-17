@@ -1,4 +1,5 @@
+from dmtcore.os.platimport import platimport
+
 def get_disks():
-    # TODO: Change to use platimport
-    from dmtcore.disk.linux import get_disks
-    return get_disks()
+    platform_get_disks = platimport("dmtcore.disk", "get_disks")
+    return platform_get_disks()
