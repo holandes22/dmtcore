@@ -53,14 +53,7 @@ Host: scsi0 Channel: 00 Id: 00 Lun: 00
 """
 
 
-def readlink_side_effect(device_name):
-    links = {
-             "/sys/block/sda/device": "../../../0:0:0:0",
-             "/sys/block/sdb/device": "0000:00/0000:00:10:0/host0/target0:0:0/0:0:0:0",
-             "/sys/block/sdc/device": "platform/host1/session1/target1:0:0:1/1:0:0:3",
-             "/sys/block/sdd/device": "../../../15:16:17:333",
-             }
-    return links[device_name]
+
 
 class TestLinuxDiskDeviceQueries(unittest.TestCase):
 
@@ -112,7 +105,6 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
 
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
     def test__extract_all_hctls_from_proc_scsi_file(self, _populate_disks_entries_mock):
-
         with patch('dmtcore.os.disk.linux.open', create = True) as open_mock:
             open_mock.return_value = MagicMock(spec = file)
 
@@ -159,6 +151,14 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
     @patch('os.readlink')
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
     def test__extract_hctl_from_device_link(self, _populate_disks_entries_mock, readlink_mock):
+        def readlink_side_effect(device_name):
+            links = {
+                     "/sys/block/sda/device": "../../../0:0:0:0",
+                     "/sys/block/sdb/device": "0000:00/0000:00:10:0/host0/target0:0:0/0:0:0:0",
+                     "/sys/block/sdc/device": "platform/host1/session1/target1:0:0:1/1:0:0:3",
+                     "/sys/block/sdd/device": "../../../15:16:17:333",
+                     }
+            return links[device_name]
         device_names = [
                  "sda",
                  "sdb",
