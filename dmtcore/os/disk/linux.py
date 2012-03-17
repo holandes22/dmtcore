@@ -10,6 +10,7 @@ from dmtcore.os.commands import SIZE_FROM_FDISK, BLKID
 
 from dmtcore.os.disk.base import DiskDeviceQueries
 from dmtcore.os.disk.base import DiskEntry, HctlInfo
+from subprocess import CalledProcessError
 
 module_logger = logging.getLogger("dmtcore.os.disk.linux")
 
@@ -22,7 +23,9 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         device_filepaths = glob('/dev/sd*[!0-9]')
         device_names = [os.path.basename(device_filepath) for device_filepath in device_filepaths]
         self.hctl_map = self._map_hctl_to_disk_device_names(device_names)
-
+        all_device_filepaths = glob('/dev/sd*')
+        self.uuid_map = self._map_uuid_to_disk_device_filepaths(all_device_filepaths)
+        
         for device_filepath, device_name in map(None, device_filepaths, device_names):
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
@@ -81,13 +84,26 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         except KeyError:
             module_logger.warning("Cannot get hctl for device {0}".format(device_name))
             return None
-
+    
+    def get_uuid(self, device_filepath):
+        try:
+            return self.uuid_map[device_filepath]
+        except KeyError:
+            module_logger.info("No uuid for device {0}".format(device_filepath))
+            return None
+        
     def _map_hctl_to_disk_device_names(self, device_names):
         hctl_map = {}
         for device_name in device_names:
             hctl_map[device_name] = self._extract_hctl_from_device_link(device_name)
         return hctl_map
-
+    
+    def _map_uuid_to_disk_device_filepaths(self, device_filepaths):
+        uuid_map= {}
+        for device_filepath in device_filepaths:
+            uuid_map[device_filepath] = self._extract_uuid_from_blkid(device_filepath)
+        return uuid_map
+    
     def _extract_hctl_from_device_link(self, device_name):
         path = "/sys/block/{0}/device".format(device_name)
         try:
@@ -122,7 +138,15 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
     
     def _extract_uuid_from_blkid(self, device_filepath):
         uuid_re = re.compile("^UUID=(?P<uuid>.*)$")
-        for line in run_cmd(BLKID + [device_filepath]).splitlines():
+        try:
+            output = run_cmd(BLKID + [device_filepath]).splitlines()
+        except CalledProcessError as e:
+            if e.returncode == 2:
+                # blkid exit code is 2 if no uuid for that device
+                return None
+            raise
+            
+        for line in output:
             m = uuid_re.match(line)
             if m  is not None:
                 return m.group("uuid")
