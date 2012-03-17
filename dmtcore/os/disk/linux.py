@@ -6,7 +6,7 @@ from glob import glob
 from dmtcore.os.disk.common import get_major_minor
 
 from dmtcore.os.commands import run_cmd
-from dmtcore.os.commands import SIZE_FROM_FDISK
+from dmtcore.os.commands import SIZE_FROM_FDISK, BLKID
 
 from dmtcore.os.disk.base import DiskDeviceQueries
 from dmtcore.os.disk.base import DiskEntry, HctlInfo
@@ -119,4 +119,12 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                                           )
                                  )
         return hctls
+    
+    def _extract_uuid_from_blkid(self, device_filepath):
+        uuid_re = re.compile("^UUID=(?P<uuid>.*)$")
+        for line in run_cmd(BLKID + [device_filepath]).splitlines():
+            m = uuid_re.match(line)
+            if m  is not None:
+                return m.group("uuid")
+        return None
 

@@ -52,7 +52,10 @@ Host: scsi0 Channel: 00 Id: 00 Lun: 00
   Type: Direct-Access ANSI SCSI revision: 05
 """
 
-
+FAKE_BLKID_OUTPUT = """
+UUID=51270839-1a9b-44a2-9786-e078206342c2
+TYPE=ext4
+"""
 
 
 class TestLinuxDiskDeviceQueries(unittest.TestCase):
@@ -187,5 +190,21 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         readlink_mock.side_effect = OSError()
         dq = LinuxDiskDeviceQueries()
         self.assertEqual(None, dq._extract_hctl_from_device_link("sda"))
-        
+    
+    @patch.object(linux, "run_cmd")    
+    @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
+    def test__extract_uuid_from_blkid(self, _populate_disks_entries_mock, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_BLKID_OUTPUT
+        fake_device_filepath = "/dev/sda1"
+        dq = LinuxDiskDeviceQueries()
+        self.assertEqual("51270839-1a9b-44a2-9786-e078206342c2", 
+                         dq._extract_uuid_from_blkid(fake_device_filepath))
 
+    @patch.object(linux, "run_cmd")    
+    @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
+    def test__extract_uuid_from_blkid_no_uuid(self, _populate_disks_entries_mock, run_cmd_mock):
+        run_cmd_mock.return_value = ""
+        fake_device_filepath = "/dev/sda1"
+        dq = LinuxDiskDeviceQueries()
+        self.assertEqual(None, dq._extract_uuid_from_blkid(fake_device_filepath))       
+        

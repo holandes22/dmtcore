@@ -6,14 +6,16 @@ module_logger = logging.getLogger("dmtcore.os.commands")
 
 #List of approved commands
 SIZE_FROM_FDISK = ['/sbin/fdisk', '-l']
+BLKID = ['/sbin/blkid', '-o', 'export']
 
 APPROVED_CMDS = [
                  SIZE_FROM_FDISK,
+                 BLKID,
                  ]
 
 def run_cmd(cmd, run_as_sudo = True):
-    #For dynamic cmds, usually the last arg is the one added dinamically
-    #TODO: Find a better wat to deal with this: issue 6
+    # For dynamic cmds, usually the last arg is the one added dinamically
+    # TODO: Find a better wat to deal with this: issue 6
     if cmd[:-1] in APPROVED_CMDS or cmd in APPROVED_CMDS:
         try:
             if run_as_sudo or os.geteuid() != 0:
