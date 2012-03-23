@@ -5,9 +5,13 @@ class LinuxMultipathDisk(MultipathDisk):
     def __init__(self, disk_entry, wwid, vendor, sysfs_name, alias):
         super(LinuxMultipathDisk, self).__init__(disk_entry)
         self.wwid = wwid
+        """WWID of the device"""
         self.vendor = vendor
+        """Vendor of the device"""
         self.sysfs_name = sysfs_name
+        """sysfs name, dm-xx"""
         self.alias = alias
+        """Alias used if friendly names is set to yes"""
 
     def _generate_paths(self):
         self.paths = []

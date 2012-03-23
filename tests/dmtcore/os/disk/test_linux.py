@@ -3,7 +3,7 @@ from mock import patch, MagicMock
 
 from dmtcore.os.disk import linux
 from dmtcore.os.disk.base import HctlInfo, DiskEntry
-from dmtcore.os.disk.linux import LinuxDiskDeviceQueries
+from dmtcore.os.disk.linux import LinuxDiskDeviceQueries, LinuxDeviceMapper
 from dmtcore.os.commands import SIZE_FROM_FDISK
 
 
@@ -57,6 +57,38 @@ UUID=51270839-1a9b-44a2-9786-e078206342c2
 TYPE=ext4
 """
 
+FAKE_MULTIPATH_LIST_RHEL5_OUTPUT = """
+mydev1 (3600a0b800011a1ee0000040646828cc5) dm-1 IBM,1815      FAStT
+[size=512M][features=1 queue_if_no_path][hwhandler=1 rdac]
+\_ round-robin 0 [prio=6][active]
+ \_ 29:0:0:1 sdf 8:80  [active][ready]
+ \_ 28:0:1:1 sdl 8:176 [active][ready]
+\_ round-robin 0 [prio=0][enabled]
+ \_ 28:0:0:1 sdb 8:16  [active][ghost]
+ \_ 29:0:1:1 sdq 65:0  [active][ghost]
+mpatha (200173800fe0000aa) dm-2 IBM,1815      FAStT
+[size=512M][features=1 queue_if_no_path][hwhandler=1 rdac]
+\_ round-robin 0 [prio=1][enabled]
+ \_ 33:0:0:1 sda 8:94  [active][ready]
+ \_ 34:0:2:1 sdb 8:233 [active][ready]
+"""
+
+FAKE_MULTIPATH_LIST_RHEL6_OUTPUT = """
+mpathc (200173800fe0000aa) dm-4 IBM,2810XIV
+size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 3:0:0:2  sdc 8:32 active faulty running
+  `- 4:0:0:2  sde 8:64 active ready running
+mpatha (200173800fdfd12b8) dm-2 IBM,2810XIV
+size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  `- 5:0:0:77 sdf 8:80 active ready running
+pablodev (200173800fe0000a9) dm-3 IBM,2810XIV
+size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 4:0:0:1  sdd 8:48 active shaky running
+  `- 3:0:0:1  sdb 8:16 active ready running
+"""
 
 class TestLinuxDiskDeviceQueries(unittest.TestCase):
 
@@ -208,3 +240,26 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         dq = LinuxDiskDeviceQueries()
         self.assertEqual(None, dq._extract_uuid_from_blkid(fake_device_filepath))       
         
+        
+class TestLinuxDeviceMapper(unittest.TestCase):
+
+    @patch.object(linux, "run_cmd")
+    def test__extract_multipath_disks_details_rhel6(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_OUTPUT
+        ldm = LinuxDeviceMapper()
+        expected_results = {
+                            "mpathc": ("200173800fe0000aa", "IBM,2810XIV", "dm-4", "mpathc"),
+                            "mpatha": ("200173800fdfd12b8", "IBM,2810XIV", "dm-2", "mpatha"),
+                            "pablodev": ("200173800fe0000a9", "IBM,2810XIV", "dm-3", "pablodev"),
+                            }
+        self.assertEqual(expected_results, ldm._extract_multipath_disks_details())
+    
+    @patch.object(linux, "run_cmd")
+    def test__extract_multipath_disks_details_rhel5(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_OUTPUT
+        ldm = LinuxDeviceMapper()
+        expected_results = {
+                            "mydev1": ("3600a0b800011a1ee0000040646828cc5", "IBM,1815", "dm-1", "mydev1"),
+                            "mpatha": ("200173800fe0000aa", "IBM,1815", "dm-2", "mpatha"),
+                            }
+        self.assertEqual(expected_results, ldm._extract_multipath_disks_details())

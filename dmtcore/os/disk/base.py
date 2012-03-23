@@ -48,5 +48,8 @@ class DiskDeviceQueries(object):
     def get_path_entries(self, device_name):
         raise NotImplementedError()
     
+    def get_path_group_entries(self, device_name):
+        raise NotImplementedError()
+    
     def _populate_disks_entries(self):
         raise NotImplementedError()

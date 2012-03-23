@@ -6,7 +6,7 @@ from glob import glob
 from dmtcore.os.disk.common import get_major_minor
 
 from dmtcore.os.commands import run_cmd
-from dmtcore.os.commands import SIZE_FROM_FDISK, BLKID
+from dmtcore.os.commands import SIZE_FROM_FDISK, BLKID, MULTIPATH_LIST
 
 from dmtcore.os.disk.base import DiskDeviceQueries
 from dmtcore.os.disk.base import DiskEntry, HctlInfo
@@ -15,7 +15,32 @@ from subprocess import CalledProcessError
 module_logger = logging.getLogger("dmtcore.os.disk.linux")
 
 class LinuxDeviceMapper(object):
-    pass
+    
+    
+    def get_multipath_disk_entries(self):
+        pass
+    
+    def get_path_group_entries(self):
+        pass
+    
+    def get_path_entries(self):
+        pass
+    
+    def _extract_multipath_disks_details(self):
+        dm_re = re.compile("\sdm-\d+\s")
+        mp_disk_details = {}
+        for line in run_cmd(MULTIPATH_LIST).splitlines():
+            if dm_re.search(line):
+                alias, wwid, sysfs_name, vendor = line.split()[0:4]
+                mp_disk_details[alias] = (wwid.strip("()"), vendor, sysfs_name, alias)
+        return mp_disk_details
+
+    def _extract_path_groups_details(self):
+        pass
+    
+    def _extract_paths_details(self):
+        pass
+    
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
 

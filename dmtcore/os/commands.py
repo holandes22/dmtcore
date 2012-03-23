@@ -7,10 +7,12 @@ module_logger = logging.getLogger("dmtcore.os.commands")
 #List of approved commands
 SIZE_FROM_FDISK = ['/sbin/fdisk', '-l']
 BLKID = ['/sbin/blkid', '-o', 'export']
+MULTIPATH_LIST = ['/sbin/multipath',  '-ll']
 
 APPROVED_CMDS = [
                  SIZE_FROM_FDISK,
                  BLKID,
+                 MULTIPATH_LIST,
                  ]
 
 def run_cmd(cmd, run_as_sudo = True):
