@@ -325,7 +325,58 @@ class TestLinuxDeviceMapper(unittest.TestCase):
 
         self.assertEqual(expected_results, 
                          ldm._extract_path_groups_details("fake_device"))
+        
+    @patch.object(linux, "run_cmd")
+    def test__extract_path_groups_details_rhel5_one_path_group(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_SINGLE_DEVICE_ONE_PATH_GROUP_OUTPUT
+        ldm = LinuxDeviceMapper()
+        expected_results = [
+                            LinuxPathGroupEntry("active", 6, "round-robin", 0, [
+                                                             LinuxPathEntry("ready", "active", "sdf"),
+                                                             LinuxPathEntry("ghost", "active", "sdl"),
+                                                            ]
+                            )
+                            ]
 
+        self.assertEqual(expected_results, 
+                         ldm._extract_path_groups_details("fake_device"))
+
+    @patch.object(linux, "run_cmd")
+    def test__extract_path_groups_details_rhel6_several_path_groups(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_SINGLE_DEVICE_SEVERAL_PATH_GROUPS_OUTPUT
+        ldm = LinuxDeviceMapper()
+        expected_results = [
+                            LinuxPathGroupEntry("active", 1, "round-robin", 0, [
+                                                             LinuxPathEntry("faulty", "active", "sdc"),
+                                                             LinuxPathEntry("ready", "active", "sde"),
+                                                            ]
+                            ),
+                            LinuxPathGroupEntry("active", 1, "round-robin", 0, [
+                                                              LinuxPathEntry("shaky", "active", "sdf"),
+                                                              LinuxPathEntry("ready", "active", "sdg"),
+                                                             ]
+                             ),
+                            ]
+
+        self.assertEqual(expected_results, 
+                         ldm._extract_path_groups_details("fake_device"))
+
+
+    @patch.object(linux, "run_cmd")
+    def test__extract_path_groups_details_rhel6_one_path_group(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_SINGLE_DEVICE_ONE_PATH_GROUP_OUTPUT
+        ldm = LinuxDeviceMapper()
+        expected_results = [
+                            LinuxPathGroupEntry("active", 1, "round-robin", 0, [
+                                                             LinuxPathEntry("faulty", "active", "sdc"),
+                                                             LinuxPathEntry("ready", "active", "sde"),
+                                                            ]
+                            )
+                            ]
+
+        self.assertEqual(expected_results, 
+                         ldm._extract_path_groups_details("fake_device"))
+        
     
     def test__extract_paths_details_rhel5(self):
         ldm = LinuxDeviceMapper()

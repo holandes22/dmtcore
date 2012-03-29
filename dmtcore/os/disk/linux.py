@@ -43,7 +43,6 @@ class LinuxDeviceMapper(object):
         path_line_re = re.compile("\d:\d:\d:\d")
         latest_path_group = None
         for line in run_cmd(MULTIPATH_LIST + [device_name]).splitlines():
-            
             if path_group_re_rhel5.search(line):
                 # \_ round-robin 0 [prio=6][active]
                 values = line.strip().split()
@@ -59,14 +58,16 @@ class LinuxDeviceMapper(object):
             elif path_group_re_rhel6.search(line):
                 # `-+- policy='round-robin 0' prio=1 status=active
                 values = line.strip().split()
-                selector, count = values[1].split('=')[1].strip('\'').split()
-                priority, state = values[2:-1]
+                selector = values[1].split('=')[1].strip("'")
+                count, priority, state = values[2:]
                 latest_path_group = LinuxPathGroupEntry(
                                                         state = state.split("=")[-1],
                                                         priority = int(priority.split("=")[-1]),
                                                         selector = selector,
-                                                        count = int(count),
+                                                        count = int(count.strip("'")),
                                                         paths = []) 
+                path_group_details.append(latest_path_group)
+                
             if latest_path_group and path_line_re.search(line):
                 latest_path_group.paths.append(self._extract_paths_details(line))
 
