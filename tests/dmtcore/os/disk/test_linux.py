@@ -3,7 +3,8 @@ from mock import patch, MagicMock
 
 from dmtcore.os.disk import linux
 from dmtcore.os.disk.base import HctlInfo, DiskEntry
-from dmtcore.os.disk.linux import LinuxDiskDeviceQueries, LinuxDeviceMapper
+from dmtcore.os.disk.linux import LinuxDiskDeviceQueries, LinuxDeviceMapper,\
+    LinuxPathEntry, LinuxPathGroupEntry
 from dmtcore.os.commands import SIZE_FROM_FDISK
 
 
@@ -71,6 +72,45 @@ mpatha (200173800fe0000aa) dm-2 IBM,1815      FAStT
 \_ round-robin 0 [prio=1][enabled]
  \_ 33:0:0:1 sda 8:94  [active][ready]
  \_ 34:0:2:1 sdb 8:233 [active][ready]
+"""
+
+FAKE_MULTIPATH_LIST_RHEL5_SINGLE_DEVICE_SEVERAL_PATH_GROUPS_OUTPUT = """
+mydev1 (3600a0b800011a1ee0000040646828cc5) dm-1 IBM,1815      FAStT
+[size=512M][features=1 queue_if_no_path][hwhandler=1 rdac]
+\_ round-robin 0 [prio=6][active]
+ \_ 29:0:0:1 sdf 8:80  [active][ready]
+ \_ 28:0:1:1 sdl 8:176 [active][ready]
+\_ round-robin 0 [prio=1][enabled]
+ \_ 28:0:0:1 sdb 8:16  [active][ghost]
+ \_ 29:0:1:1 sdq 65:0  [active][ghost]
+"""
+
+FAKE_MULTIPATH_LIST_RHEL5_SINGLE_DEVICE_ONE_PATH_GROUP_OUTPUT = """
+mydev1 (3600a0b800011a1ee0000040646828cc5) dm-1 IBM,1815      FAStT
+[size=512M][features=1 queue_if_no_path][hwhandler=1 rdac]
+\_ round-robin 0 [prio=6][active]
+ \_ 29:0:0:1 sdf 8:80  [active][ready]
+ \_ 28:0:1:1 sdl 8:176 [active][ghost]
+"""
+
+FAKE_MULTIPATH_LIST_RHEL6_SINGLE_DEVICE_SEVERAL_PATH_GROUPS_OUTPUT = """
+Mar 23 09:20:47 | /lib/udev/scsi_id exitted with 1
+mpathc (200173800fe0000aa) dm-4 IBM,2810XIV
+size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 3:0:0:2  sdc 8:32 active faulty running
+  `- 4:0:0:2  sde 8:64 active ready running
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 5:0:0:2  sdf 8:33 active shaky running
+  `- 6:0:0:2  sdg 8:65 active ready running
+"""
+
+FAKE_MULTIPATH_LIST_RHEL6_SINGLE_DEVICE_ONE_PATH_GROUP_OUTPUT = """
+mpathc (200173800fe0000aa) dm-4 IBM,2810XIV
+size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+`-+- policy='round-robin 0' prio=1 status=active
+  |- 3:0:0:2  sdc 8:32 active faulty running
+  `- 4:0:0:2  sde 8:64 active ready running
 """
 
 FAKE_MULTIPATH_LIST_RHEL6_OUTPUT = """
@@ -254,6 +294,7 @@ class TestLinuxDeviceMapper(unittest.TestCase):
                             }
         self.assertEqual(expected_results, ldm._extract_multipath_disks_details())
     
+
     @patch.object(linux, "run_cmd")
     def test__extract_multipath_disks_details_rhel5(self, run_cmd_mock):
         run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_OUTPUT
@@ -263,3 +304,35 @@ class TestLinuxDeviceMapper(unittest.TestCase):
                             "mpatha": ("200173800fe0000aa", "IBM,1815", "dm-2", "mpatha"),
                             }
         self.assertEqual(expected_results, ldm._extract_multipath_disks_details())
+
+
+    @patch.object(linux, "run_cmd")
+    def test__extract_path_groups_details_rhel5_several_path_groups(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_SINGLE_DEVICE_SEVERAL_PATH_GROUPS_OUTPUT
+        ldm = LinuxDeviceMapper()
+        expected_results = [
+                            LinuxPathGroupEntry("active", 6, "round-robin", 0, [
+                                                             LinuxPathEntry("ready", "active", "sdf"),
+                                                             LinuxPathEntry("ready", "active", "sdl"),
+                                                            ]
+                            ),
+                            LinuxPathGroupEntry("enabled", 1, "round-robin", 0, [
+                                                              LinuxPathEntry("ghost", "active", "sdb"),
+                                                              LinuxPathEntry("ghost", "active", "sdq"),
+                                                             ]
+                             ),
+                            ]
+
+        self.assertEqual(expected_results, 
+                         ldm._extract_path_groups_details("fake_device"))
+
+    
+    def test__extract_paths_details_rhel5(self):
+        ldm = LinuxDeviceMapper()
+        expected_results = LinuxPathEntry("ready", "active", "sdf")
+        self.assertEqual(expected_results, ldm._extract_paths_details(" \_ 29:0:0:1 sdf 8:80  [active][ready]"))
+
+    def test__extract_paths_details_rhel6(self):
+        ldm = LinuxDeviceMapper()
+        expected_results = LinuxPathEntry("faulty", "active", "sdc")
+        self.assertEqual(expected_results, ldm._extract_paths_details("  |- 3:0:0:2  sdc 8:32 active faulty running"))        

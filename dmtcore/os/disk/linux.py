@@ -11,8 +11,12 @@ from dmtcore.os.commands import SIZE_FROM_FDISK, BLKID, MULTIPATH_LIST
 from dmtcore.os.disk.base import DiskDeviceQueries
 from dmtcore.os.disk.base import DiskEntry, HctlInfo
 from subprocess import CalledProcessError
+from collections import namedtuple
 
 module_logger = logging.getLogger("dmtcore.os.disk.linux")
+
+LinuxPathEntry = namedtuple("LinuxPathEntry", "physical_state,mapper_path_state,name")
+LinuxPathGroupEntry = namedtuple("LinuxPathGroupEntry", "state,priority,selector,count,paths")
 
 class LinuxDeviceMapper(object):
     
@@ -21,9 +25,6 @@ class LinuxDeviceMapper(object):
         pass
     
     def get_path_group_entries(self):
-        pass
-    
-    def get_path_entries(self):
         pass
     
     def _extract_multipath_disks_details(self):
@@ -35,11 +36,62 @@ class LinuxDeviceMapper(object):
                 mp_disk_details[alias] = (wwid.strip("()"), vendor, sysfs_name, alias)
         return mp_disk_details
 
-    def _extract_path_groups_details(self):
-        pass
+    def _extract_path_groups_details(self, device_name):
+        path_group_details = []
+        path_group_re_rhel5 = re.compile("\\_.*\[prio=.*$")
+        path_group_re_rhel6 = re.compile(".*\spolicy.*$")
+        path_line_re = re.compile("\d:\d:\d:\d")
+        latest_path_group = None
+        for line in run_cmd(MULTIPATH_LIST + [device_name]).splitlines():
+            
+            if path_group_re_rhel5.search(line):
+                # \_ round-robin 0 [prio=6][active]
+                values = line.strip().split()
+                selector, count = values[1:3]
+                priority, state = values[-1].strip("[]").split("][")
+                latest_path_group = LinuxPathGroupEntry(
+                                                        state = state,
+                                                        priority = int(priority.replace("prio=", "")),
+                                                        selector = selector,
+                                                        count = int(count),
+                                                        paths = [])
+                path_group_details.append(latest_path_group)
+            elif path_group_re_rhel6.search(line):
+                # `-+- policy='round-robin 0' prio=1 status=active
+                values = line.strip().split()
+                selector, count = values[1].split('=')[1].strip('\'').split()
+                priority, state = values[2:-1]
+                latest_path_group = LinuxPathGroupEntry(
+                                                        state = state.split("=")[-1],
+                                                        priority = int(priority.split("=")[-1]),
+                                                        selector = selector,
+                                                        count = int(count),
+                                                        paths = []) 
+            if latest_path_group and path_line_re.search(line):
+                latest_path_group.paths.append(self._extract_paths_details(line))
+
+        return path_group_details
     
-    def _extract_paths_details(self):
-        pass
+    def _extract_paths_details(self, path_line):
+        """
+        rhel5 string: 
+            " \_ 29:0:0:1 sdf 8:80  [active][ready]"
+        rhel6 string has online_status attr at the end: 
+            "  |- 3:0:0:2  sdc 8:32 active faulty running"        
+        """
+        try:
+            hctl, name, devno, mapper_path_state, physical_state = path_line.strip().split()[1:-1]
+        except ValueError:
+            # RHEL5
+            values = path_line.strip().split()
+            hctl, name, devno = values[1:4]
+            mapper_path_state, physical_state = values[-1].strip("[]").split("][")
+         
+        return LinuxPathEntry(
+                              physical_state = physical_state,
+                              mapper_path_state = mapper_path_state,
+                              name = name
+                              )
     
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):

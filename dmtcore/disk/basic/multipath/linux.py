@@ -20,16 +20,15 @@ class LinuxMultipathDisk(MultipathDisk):
 
 class LinuxPath(Path):
 
-    def __init__(self, path_entry):
+    def __init__(self, path_entry, name):
         super(LinuxPath, self).__init__(path_entry)
-
+        self.name = name
 
 class LinuxPathGroup(PathGroup):
 
-    def __init__(self, paths, state, priority, selector, repeat_count, level):
+    def __init__(self, paths, state, priority, selector, repeat_count):
         super(LinuxPathGroup, self).__init__(paths)
         self.state = state
         self.priority = priority
         self.selector = selector
         self.repeat_count = repeat_count
-        self.level = level
