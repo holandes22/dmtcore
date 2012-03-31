@@ -211,10 +211,16 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         extract_size_mock.return_value = fake_size
         dq = LinuxDiskDeviceQueries()
         expected_results = [
-                            DiskEntry('sda1', '/dev/sda1', fake_size, (250, 1)),
-                            DiskEntry('sda2', '/dev/sda2', fake_size, (250, 2)),
-                            DiskEntry('sda3', '/dev/sda3', fake_size, (250, 3)),
+                            DiskEntry('sda1', '/dev/sda1', fake_size, (250, 1), (1,1,1,1)),
+                            DiskEntry('sda2', '/dev/sda2', fake_size, (250, 2), (2,2,2,2)),
+                            DiskEntry('sda3', '/dev/sda3', fake_size, (250, 3), (3,3,3,3)),
                             ]
+        # TODO: This is kinda ugly, better would be to mock _map_hctl_to_disk_device_names
+        dq.hctl_map = {
+                       "sda1": (1,1,1,1),
+                       "sda2": (2,2,2,2),
+                       "sda3": (3,3,3,3),
+                       }
         actual_results = dq._get_sysfs_partitions('sda')
         self.assertEqual(len(expected_results), len(actual_results))
         for expected_result, actual_result in map(None, expected_results, actual_results):
@@ -222,6 +228,7 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
             self.assertEqual(expected_result.filepath, actual_result.filepath)
             self.assertEqual(expected_result.size, actual_result.size)
             self.assertEqual(expected_result.major_minor, actual_result.major_minor)
+            self.assertEqual(expected_result.hctl, actual_result.hctl)
 
     @patch('os.readlink')
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")

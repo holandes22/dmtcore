@@ -36,8 +36,10 @@ class LinuxDeviceMapper(object):
                                                              )
         return mp_disk_details
     
+    
     def get_path_group_entries(self, device_name):
         return self._extract_path_groups_details(device_name)
+    
 
     def _extract_path_groups_details(self, device_name):
         path_group_details = []
@@ -73,8 +75,8 @@ class LinuxDeviceMapper(object):
                 
             if latest_path_group and path_line_re.search(line):
                 latest_path_group.paths.append(self._extract_paths_details(line))
-
         return path_group_details
+    
     
     def _extract_paths_details(self, path_line):
         """
@@ -135,11 +137,13 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         for partition_filepath in partition_filepaths:
             size = self._extract_size_from_fdisk(partition_filepath)
             major_minor = get_major_minor(partition_filepath)
+            hctl = self.get_hctl(os.path.basename(partition_filepath))
             partitions.append(DiskEntry(
                                         os.path.basename(partition_filepath),
                                         partition_filepath,
                                         size,
                                         major_minor,
+                                        hctl
                                         )
                               )
         return partitions
