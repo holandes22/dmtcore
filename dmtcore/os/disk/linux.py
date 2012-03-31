@@ -107,9 +107,12 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         for device_filepath, device_name in map(None, device_filepaths, device_names):
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
-            self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor))
+            hctl = self.get_hctl(device_name)
+            self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor, hctl))
+        
+        # ldm = LinuxDeviceMapper()
+        
 
-        self.multipath_disk_entries = []
 
     def get_partition_entries(self, device_name):
         return self._get_sysfs_partitions(device_name)

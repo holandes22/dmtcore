@@ -2,8 +2,8 @@ from dmtcore.disk.base import BasicDisk, DiskPartition
 
 class LinuxDisk(BasicDisk):
     
-    def __init__(self, disk_entry, hctl, uuid, disk_queries):
-        super(LinuxDisk, self).__init__(disk_entry, hctl)
+    def __init__(self, disk_entry, uuid, disk_queries):
+        super(LinuxDisk, self).__init__(disk_entry)
         self.uuid = uuid
         self.disk_queries = disk_queries
 

@@ -8,6 +8,7 @@ class Disk(object):
         self.filepath = disk_entry.filepath
         self.size = disk_entry.size
         self.major_minor = disk_entry.major_minor
+        self.hctl = disk_entry.hctl
 
     def get_name(self):
         return self.name
@@ -23,6 +24,12 @@ class Disk(object):
         Named tuple of major and minor numbers
         """
         return self.major_minor
+    
+    def get_hctl(self):
+        """
+        SCSI info: host, channel, scsi_id and lun
+        """
+        return self.hctl
 
 
 class DiskPartition(Disk):
@@ -36,9 +43,8 @@ class BasicDisk(Disk):
     Represents a basic (local, non-multipath) disk
     """
 
-    def __init__(self, disk_entry, hctl):
+    def __init__(self, disk_entry):
         super(BasicDisk, self).__init__(disk_entry)
-        self.hctl = hctl
         self.partitions = None
 
     def get_partitions(self):
@@ -49,13 +55,9 @@ class BasicDisk(Disk):
     def _generate_partitions(self):
         raise NotImplementedError()
     
-    def get_hctl(self):
-        """
-        SCSI info: host, channel, scsi_id and lun
-        """
-        return self.hctl
 
-class MultipathDisk(BasicDisk):
+
+class MultipathDisk(Disk):
     
     def __init__(self, disk_entry):
         super(MultipathDisk, self).__init__(disk_entry)
