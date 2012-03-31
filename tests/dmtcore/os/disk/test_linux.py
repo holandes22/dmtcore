@@ -284,7 +284,7 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
 class TestLinuxDeviceMapper(unittest.TestCase):
 
     @patch.object(linux, "run_cmd")
-    def test__extract_multipath_disks_details_rhel6(self, run_cmd_mock):
+    def test_get_multipath_disks_details_rhel6(self, run_cmd_mock):
         run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_OUTPUT
         ldm = LinuxDeviceMapper()
         expected_results = {
@@ -292,18 +292,18 @@ class TestLinuxDeviceMapper(unittest.TestCase):
                             "mpatha": ("200173800fdfd12b8", "IBM,2810XIV", "dm-2", "mpatha"),
                             "pablodev": ("200173800fe0000a9", "IBM,2810XIV", "dm-3", "pablodev"),
                             }
-        self.assertEqual(expected_results, ldm._extract_multipath_disks_details())
+        self.assertEqual(expected_results, ldm.get_multipath_disks_details())
     
 
     @patch.object(linux, "run_cmd")
-    def test__extract_multipath_disks_details_rhel5(self, run_cmd_mock):
+    def test_get_multipath_disks_details_rhel5(self, run_cmd_mock):
         run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_OUTPUT
         ldm = LinuxDeviceMapper()
         expected_results = {
                             "mydev1": ("3600a0b800011a1ee0000040646828cc5", "IBM,1815", "dm-1", "mydev1"),
                             "mpatha": ("200173800fe0000aa", "IBM,1815", "dm-2", "mpatha"),
                             }
-        self.assertEqual(expected_results, ldm._extract_multipath_disks_details())
+        self.assertEqual(expected_results, ldm.get_multipath_disks_details())
 
 
     @patch.object(linux, "run_cmd")
