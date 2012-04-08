@@ -2,7 +2,7 @@ class Disk(object):
     """
     Base interface for disk objects
     """
-    
+
     def __init__(self, disk_entry):
         self.name = disk_entry.name
         self.filepath = disk_entry.filepath
@@ -24,7 +24,7 @@ class Disk(object):
         Named tuple of major and minor numbers
         """
         return self.major_minor
-    
+
     def get_hctl(self):
         """
         SCSI info: host, channel, scsi_id and lun
@@ -33,10 +33,11 @@ class Disk(object):
 
 
 class DiskPartition(Disk):
-    
+
     def __init__(self, disk_entry, parent):
         super(DiskPartition, self).__init__(disk_entry)
         self.parent = parent
+
 
 class BasicDisk(Disk):
     """
@@ -54,11 +55,10 @@ class BasicDisk(Disk):
 
     def _generate_partitions(self):
         raise NotImplementedError()
-    
 
 
 class MultipathDisk(Disk):
-    
+
     def __init__(self, disk_entry):
         super(MultipathDisk, self).__init__(disk_entry)
         self.paths = None
@@ -86,6 +86,7 @@ class MultipathDisk(Disk):
     def get_active_path_count(self):
         return len([path for path in self.paths if path.is_active()])
 
+
 class Path(object):
     """
     Represents a path on a multipath disk
@@ -100,12 +101,11 @@ class Path(object):
     def is_active(self):
         return self.state == 'active'
 
+
 class PathGroup(object):
     """
-    Represents a group of paths from a multipath disk. 
+    Represents a group of paths from a multipath disk.
     This is not neccessarily relevant for all platforms (Linux has this concept, but HP-UX no for instance)
     """
     def __init__(self, paths):
         self.paths = paths
-
-
