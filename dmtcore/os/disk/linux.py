@@ -40,6 +40,9 @@ class LinuxDeviceMapper(object):
         return self._extract_path_groups_details(device_name)
 
     def _extract_path_groups_details(self, device_name):
+        # I dsicovered that running multipath -l <device_name> is awfully slow
+        # sometime, so we run multipath -l and remove the unwanted devices
+
         path_group_details = []
         path_group_re_rhel5 = re.compile("\\_.*\[prio=.*$")
         path_group_re_rhel6 = re.compile(".*\spolicy.*$")
@@ -95,6 +98,21 @@ class LinuxDeviceMapper(object):
                               mapper_path_state = mapper_path_state,
                               name = name
                               )
+
+    def _extract_relevant_device_lines_from_multipath(self, device_name):
+        device_re = re.compile("(?P<device_name>\w+)\s+\(\w+\)\s+dm-\d+")
+        lines = []
+        device_found = False
+        for line in run_cmd(MULTIPATH_LIST).strip().splitlines():
+            m = device_re.search(line)
+            if m:
+                if m.group("device_name") == device_name:
+                    device_found = True
+                else:
+                    device_found = False
+            if device_found:
+                lines.append(line.strip())
+        return lines
 
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
