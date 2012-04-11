@@ -21,7 +21,7 @@ LinuxPathGroupEntry = namedtuple("LinuxPathGroupEntry", "state,priority,selector
 
 class LinuxDeviceMapper(object):
 
-    
+
     def get_multipath_disks_details(self):
         dm_re = re.compile("\sdm-\d+\s")
         mp_disk_details = {}
@@ -29,16 +29,16 @@ class LinuxDeviceMapper(object):
             if dm_re.search(line):
                 alias, wwid, sysfs_name, vendor = line.split()[0:4]
                 mp_disk_details[alias] = LinuxDMPDiskDetails(
-                                                             wwid = wwid.strip("()"), 
-                                                             vendor = vendor, 
-                                                             sysfs_name = sysfs_name, 
+                                                             wwid = wwid.strip("()"),
+                                                             vendor = vendor,
+                                                             sysfs_name = sysfs_name,
                                                              alias = alias
                                                              )
         return mp_disk_details
-        
+
     def get_path_group_entries(self, device_name):
         return self._extract_path_groups_details(device_name)
-    
+
     def _extract_path_groups_details(self, device_name):
         path_group_details = []
         path_group_re_rhel5 = re.compile("\\_.*\[prio=.*$")
@@ -68,19 +68,19 @@ class LinuxDeviceMapper(object):
                                                         priority = int(priority.split("=")[-1]),
                                                         selector = selector,
                                                         count = int(count.strip("'")),
-                                                        paths = []) 
+                                                        paths = [])
                 path_group_details.append(latest_path_group)
-                
+
             if latest_path_group and path_line_re.search(line):
                 latest_path_group.paths.append(self._extract_paths_details(line))
         return path_group_details
-    
+
     def _extract_paths_details(self, path_line):
         """
-        rhel5 string: 
+        rhel5 string:
             " \_ 29:0:0:1 sdf 8:80  [active][ready]"
-        rhel6 string has online_status attr at the end: 
-            "  |- 3:0:0:2  sdc 8:32 active faulty running"        
+        rhel6 string has online_status attr at the end:
+            "  |- 3:0:0:2  sdc 8:32 active faulty running"
         """
         try:
             hctl, name, devno, mapper_path_state, physical_state = path_line.strip().split()[1:-1]
@@ -89,16 +89,16 @@ class LinuxDeviceMapper(object):
             values = path_line.strip().split()
             hctl, name, devno = values[1:4]
             mapper_path_state, physical_state = values[-1].strip("[]").split("][")
-         
+
         return LinuxPathEntry(
                               physical_state = physical_state,
                               mapper_path_state = mapper_path_state,
                               name = name
                               )
-    
+
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
-    
+
 
     def _populate_disks_entries(self):
         device_filepaths = glob('/dev/sd*[!0-9]')
@@ -106,13 +106,12 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         self.hctl_map = self._map_hctl_to_disk_device_names(device_names)
         all_device_filepaths = glob('/dev/sd*')
         self.uuid_map = self._map_uuid_to_disk_device_filepaths(all_device_filepaths)
-        
         for device_filepath, device_name in map(None, device_filepaths, device_names):
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
             hctl = self.get_hctl(device_name)
             self.basic_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor, hctl))
-        
+
         ldm = LinuxDeviceMapper()
         for detail in ldm.get_multipath_disks_details().values():
             # TODO: Do we store here the rest of the dmp details? (alias, wwid, sysfs name, etc.)
@@ -121,11 +120,13 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
             hctl = self.get_hctl(device_name)
-            self.multipath_disk_entries.append(DiskEntry(device_name, device_filepath, size, major_minor, hctl))
-                              
+            entry = DiskEntry(device_name, device_filepath, size, major_minor, hctl)
+            entry.mp_details = detail
+            self.multipath_disk_entries.append(entry)
+
     def get_partition_entries(self, device_name):
         return self._get_sysfs_partitions(device_name)
-    
+
     def _get_sysfs_partitions(self, device_name):
         partitions = []
         partition_filepaths = glob('/dev/%s[0-9]*' % device_name)
@@ -142,7 +143,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                                         )
                               )
         return partitions
-    
+
     def _device_name_is_partition(self, device_name):
         """
         Receives a device name and indicates if it is a partition or not:
@@ -151,7 +152,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         sda1b, /dev/sda1 ->False, not valid input
         """
         return  re.compile("^\w+\d+$").match(device_name) is not None
-    
+
     def _extract_size_from_fdisk(self, device_filepath):
         """/sys/block/sda/device/block/sda
         :returns: The size in bytes of the specified device
@@ -169,33 +170,33 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                                                             Output: {1}".format(device_filepath, size))
                     return None
         return None
-    
+
     def get_hctl(self, device_name):
         try:
             return self.hctl_map[device_name]
         except KeyError:
             module_logger.warning("Cannot get hctl for device {0}".format(device_name))
             return None
-        
+
     def get_uuid(self, device_filepath):
         try:
             return self.uuid_map[device_filepath]
         except KeyError:
             module_logger.info("No uuid for device {0}".format(device_filepath))
             return None
-                
+
     def _map_hctl_to_disk_device_names(self, device_names):
         hctl_map = {}
         for device_name in device_names:
             hctl_map[device_name] = self._extract_hctl_from_device_link(device_name)
-        return hctl_map   
-    
+        return hctl_map
+
     def _map_uuid_to_disk_device_filepaths(self, device_filepaths):
         uuid_map= {}
         for device_filepath in device_filepaths:
             uuid_map[device_filepath] = self._extract_uuid_from_blkid(device_filepath)
         return uuid_map
-        
+
     def _extract_hctl_from_device_link(self, device_name):
         path = "/sys/block/{0}/device".format(device_name)
         try:
@@ -203,7 +204,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         except OSError:
             return None
         return HctlInfo(int(h),int(c),int(t),int(l))
-    
+
     def _extract_all_hctls_from_proc_scsi_file(self):
         hctls = []
         hctl_line_re= re.compile("""
@@ -226,7 +227,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                                           )
                                  )
         return hctls
-        
+
     def _extract_uuid_from_blkid(self, device_filepath):
         uuid_re = re.compile("^UUID=(?P<uuid>.*)$")
         try:
@@ -236,7 +237,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                 # blkid exit code is 2 if no uuid for that device
                 return None
             raise
-            
+
         for line in output:
             m = uuid_re.match(line)
             if m  is not None:

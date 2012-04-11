@@ -1,16 +1,17 @@
 from dmtcore.disk.base import MultipathDisk, Path, PathGroup
 
+
 class LinuxMultipathDisk(MultipathDisk):
-    
-    def __init__(self, disk_entry, wwid, vendor, sysfs_name, alias):
+
+    def __init__(self, disk_entry):
         super(LinuxMultipathDisk, self).__init__(disk_entry)
-        self.wwid = wwid
+        self.wwid = disk_entry.mp_details.wwid
         """WWID of the device"""
-        self.vendor = vendor
+        self.vendor = disk_entry.mp_details.vendor
         """Vendor of the device"""
-        self.sysfs_name = sysfs_name
+        self.sysfs_name = disk_entry.mp_details.sysfs_name
         """sysfs name, dm-xx"""
-        self.alias = alias
+        self.alias = disk_entry.mp_details.alias
         """Alias used if friendly names is set to yes"""
 
     def _generate_paths(self):
@@ -23,6 +24,7 @@ class LinuxPath(Path):
     def __init__(self, path_entry, name):
         super(LinuxPath, self).__init__(path_entry)
         self.name = name
+
 
 class LinuxPathGroup(PathGroup):
 
