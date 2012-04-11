@@ -291,7 +291,6 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
 
 class TestLinuxDeviceMapper(unittest.TestCase):
 
-
     @patch.object(linux, "run_cmd")
     def test_get_multipath_disks_details_rhel6(self, run_cmd_mock):
         run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_OUTPUT
@@ -313,9 +312,18 @@ class TestLinuxDeviceMapper(unittest.TestCase):
                             }
         self.assertEqual(expected_results, ldm.get_multipath_disks_details())
 
-    @patch.object(linux, "run_cmd")
-    def test__extract_path_groups_details_rhel5_several_path_groups(self, run_cmd_mock):
-        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_SINGLE_DEVICE_SEVERAL_PATH_GROUPS_OUTPUT
+    @patch.object(LinuxDeviceMapper, "_extract_relevant_device_lines_from_multipath")
+    def test__extract_path_groups_details_rhel5_several_path_groups(self, extract_lines):
+        extract_lines.return_value = """
+        mydev1 (3600a0b800011a1ee0000040646828cc5) dm-1 IBM,1815      FAStT
+        [size=512M][features=1 queue_if_no_path][hwhandler=1 rdac]
+        \_ round-robin 0 [prio=6][active]
+        \_ 29:0:0:1 sdf 8:80  [active][ready]
+        \_ 28:0:1:1 sdl 8:176 [active][ready]
+        \_ round-robin 0 [prio=1][enabled]
+        \_ 28:0:0:1 sdb 8:16  [active][ghost]
+        \_ 29:0:1:1 sdq 65:0  [active][ghost]
+       """.strip().splitlines()
         ldm = LinuxDeviceMapper()
         expected_results = [
                             LinuxPathGroupEntry("active", 6, "round-robin", 0, [
@@ -333,9 +341,15 @@ class TestLinuxDeviceMapper(unittest.TestCase):
         self.assertEqual(expected_results,
                          ldm._extract_path_groups_details("fake_device"))
 
-    @patch.object(linux, "run_cmd")
-    def test__extract_path_groups_details_rhel5_one_path_group(self, run_cmd_mock):
-        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL5_SINGLE_DEVICE_ONE_PATH_GROUP_OUTPUT
+    @patch.object(LinuxDeviceMapper, "_extract_relevant_device_lines_from_multipath")
+    def test__extract_path_groups_details_rhel5_one_path_group(self, extract_lines):
+        extract_lines.return_value = """
+        mydev1 (3600a0b800011a1ee0000040646828cc5) dm-1 IBM,1815      FAStT
+        [size=512M][features=1 queue_if_no_path][hwhandler=1 rdac]
+        \_ round-robin 0 [prio=6][active]
+        \_ 29:0:0:1 sdf 8:80  [active][ready]
+        \_ 28:0:1:1 sdl 8:176 [active][ghost]
+        """.strip().splitlines()
         ldm = LinuxDeviceMapper()
         expected_results = [
                             LinuxPathGroupEntry("active", 6, "round-robin", 0, [
@@ -348,9 +362,18 @@ class TestLinuxDeviceMapper(unittest.TestCase):
         self.assertEqual(expected_results,
                          ldm._extract_path_groups_details("fake_device"))
 
-    @patch.object(linux, "run_cmd")
-    def test__extract_path_groups_details_rhel6_several_path_groups(self, run_cmd_mock):
-        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_SINGLE_DEVICE_SEVERAL_PATH_GROUPS_OUTPUT
+    @patch.object(LinuxDeviceMapper, "_extract_relevant_device_lines_from_multipath")
+    def test__extract_path_groups_details_rhel6_several_path_groups(self, extract_lines):
+        extract_lines.return_value = """
+        mpathc (200173800fe0000aa) dm-4 IBM,2810XIV
+        size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+        `-+- policy='round-robin 0' prio=1 status=active
+        |- 3:0:0:2  sdc 8:32 active faulty running
+        `- 4:0:0:2  sde 8:64 active ready running
+        `-+- policy='round-robin 0' prio=1 status=active
+        |- 5:0:0:2  sdf 8:33 active shaky running
+        `- 6:0:0:2  sdg 8:65 active ready running
+        """.strip().splitlines()
         ldm = LinuxDeviceMapper()
         expected_results = [
                             LinuxPathGroupEntry("active", 1, "round-robin", 0, [
@@ -368,9 +391,15 @@ class TestLinuxDeviceMapper(unittest.TestCase):
         self.assertEqual(expected_results,
                          ldm._extract_path_groups_details("fake_device"))
 
-    @patch.object(linux, "run_cmd")
-    def test__extract_path_groups_details_rhel6_one_path_group(self, run_cmd_mock):
-        run_cmd_mock.return_value = FAKE_MULTIPATH_LIST_RHEL6_SINGLE_DEVICE_ONE_PATH_GROUP_OUTPUT
+    @patch.object(LinuxDeviceMapper, "_extract_relevant_device_lines_from_multipath")
+    def test__extract_path_groups_details_rhel6_one_path_group(self, extract_lines):
+        extract_lines.return_value = """
+        mpathc (200173800fe0000aa) dm-4 IBM,2810XIV
+        size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
+        `-+- policy='round-robin 0' prio=1 status=active
+        |- 3:0:0:2  sdc 8:32 active faulty running
+        `- 4:0:0:2  sde 8:64 active ready running
+        """.strip().splitlines()
         ldm = LinuxDeviceMapper()
         expected_results = [
                             LinuxPathGroupEntry("active", 1, "round-robin", 0, [
@@ -451,7 +480,3 @@ class TestLinuxDeviceMapper(unittest.TestCase):
             `- 6:0:0:2  sdg 8:65 active ready running
         """.strip().splitlines()
         self.assertEqual([l.strip() for l in expected_result], ldm._extract_relevant_device_lines_from_multipath("mpathc"))
-
-
-
-

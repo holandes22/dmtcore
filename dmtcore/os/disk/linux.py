@@ -42,13 +42,13 @@ class LinuxDeviceMapper(object):
     def _extract_path_groups_details(self, device_name):
         # I dsicovered that running multipath -l <device_name> is awfully slow
         # sometime, so we run multipath -l and remove the unwanted devices
-
+        lines = self._extract_relevant_device_lines_from_multipath(device_name)
         path_group_details = []
         path_group_re_rhel5 = re.compile("\\_.*\[prio=.*$")
         path_group_re_rhel6 = re.compile(".*\spolicy.*$")
         path_line_re = re.compile("\d:\d:\d:\d")
         latest_path_group = None
-        for line in run_cmd(MULTIPATH_LIST + [device_name]).splitlines():
+        for line in lines:
             if path_group_re_rhel5.search(line):
                 # \_ round-robin 0 [prio=6][active]
                 values = line.strip().split()
