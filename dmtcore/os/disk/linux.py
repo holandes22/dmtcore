@@ -121,7 +121,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             hctl = self.get_hctl(device_name)
             entry = DiskEntry(device_name, device_filepath, size, major_minor, hctl)
             entry.mp_details = detail
-            entry.path_groups = ldm.get_path_group_entries(device_name)
+            entry.path_groups = ldm.get_path_group_entries(detail.alias)
             self.multipath_disk_entries.append(entry)
 
     def get_partition_entries(self, device_name):
