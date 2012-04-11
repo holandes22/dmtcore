@@ -19,8 +19,8 @@ LinuxDMPDiskDetails = namedtuple("LinuxDMPDiskDetails", "wwid,vendor,sysfs_name,
 LinuxPathEntry = namedtuple("LinuxPathEntry", "physical_state,mapper_path_state,name")
 LinuxPathGroupEntry = namedtuple("LinuxPathGroupEntry", "state,priority,selector,count,paths")
 
-class LinuxDeviceMapper(object):
 
+class LinuxDeviceMapper(object):
 
     def get_multipath_disks_details(self):
         dm_re = re.compile("\sdm-\d+\s")
@@ -99,7 +99,6 @@ class LinuxDeviceMapper(object):
 
 class LinuxDiskDeviceQueries(DiskDeviceQueries):
 
-
     def _populate_disks_entries(self):
         device_filepaths = glob('/dev/sd*[!0-9]')
         device_names = [os.path.basename(device_filepath) for device_filepath in device_filepaths]
@@ -116,12 +115,13 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         for detail in ldm.get_multipath_disks_details().values():
             # TODO: Do we store here the rest of the dmp details? (alias, wwid, sysfs name, etc.)
             device_name = os.path.join("mapper", detail.alias)
-            device_filepath = os.path.join("/","dev", device_name)
+            device_filepath = os.path.join("/", "dev", device_name)
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
             hctl = self.get_hctl(device_name)
             entry = DiskEntry(device_name, device_filepath, size, major_minor, hctl)
             entry.mp_details = detail
+            entry.path_groups = ldm.get_path_group_entries(device_name)
             self.multipath_disk_entries.append(entry)
 
     def get_partition_entries(self, device_name):
@@ -192,7 +192,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         return hctl_map
 
     def _map_uuid_to_disk_device_filepaths(self, device_filepaths):
-        uuid_map= {}
+        uuid_map = {}
         for device_filepath in device_filepaths:
             uuid_map[device_filepath] = self._extract_uuid_from_blkid(device_filepath)
         return uuid_map
@@ -200,14 +200,14 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
     def _extract_hctl_from_device_link(self, device_name):
         path = "/sys/block/{0}/device".format(device_name)
         try:
-            h,c,t,l = os.readlink(path).split("/")[-1].split(":")
+            h, c, t, l = os.readlink(path).split("/")[-1].split(":")
         except OSError:
             return None
-        return HctlInfo(int(h),int(c),int(t),int(l))
+        return HctlInfo(int(h), int(c), int(t), int(l))
 
     def _extract_all_hctls_from_proc_scsi_file(self):
         hctls = []
-        hctl_line_re= re.compile("""
+        hctl_line_re = re.compile("""
                                     Host:\s*\w*(?P<host>\d+)\s*
                                     Channel:\s*(?P<channel>\d+)\s*
                                     Id:\s*(?P<scsi_id>\d+)\s*
