@@ -29,6 +29,28 @@ Disk identifier: 0x00000000
 Disk /dev/sda6 doesn't contain a valid partition table
 """
 
+FAKE_FDISK_GOOD_OUTPUT_MULTIPATH_DEVICE = """
+Disk /dev/mapper/mpatha doesn't contain a valid partition table
+
+Disk /dev/mapper/mpathc: 17.2 GB, 17208180736 bytes
+255 heads, 63 sectors/track, 2092 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+Disk /dev/mapper/mpathc doesn't contain a valid partition table
+
+Disk /dev/mapper/mpathb: 17.2 GB, 17208180736 bytes
+255 heads, 63 sectors/track, 2092 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+
+Disk /dev/mapper/mpathb doesn't contain a valid partition table
+"""
+
 FAKE_FDISK_BAD_OUTPUT = ""
 
 FAKE_CONTENT_OF_PROC_SCSI = """
@@ -130,8 +152,8 @@ size=16G features='1 queue_if_no_path' hwhandler='0' wp=rw
   `- 3:0:0:1  sdb 8:16 active ready running
 """
 
-class TestLinuxDiskDeviceQueries(unittest.TestCase):
 
+class TestLinuxDiskDeviceQueries(unittest.TestCase):
 
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
     def test__device_name_is_partition__device_is_a_partition(self, _populate_disks_entries_mock):
@@ -161,6 +183,16 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         actual_size = dq._extract_size_from_fdisk(fake_device_filepath)
         run_cmd_mock.assert_called_once_with(SIZE_FROM_FDISK + [fake_device_filepath])
         self.assertEqual(8185184256, actual_size)
+
+    @patch.object(linux, "run_cmd")
+    @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
+    def test__extract_size_from_fdisk_good_output_multipath_device(self, _populate_disks_entries_mock, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_FDISK_GOOD_OUTPUT_MULTIPATH_DEVICE
+        dq = LinuxDiskDeviceQueries()
+        fake_device_filepath = "/dev/mapper/mpathc"
+        actual_size = dq._extract_size_from_fdisk(fake_device_filepath)
+        run_cmd_mock.assert_called_once_with(SIZE_FROM_FDISK + [fake_device_filepath])
+        self.assertEqual(17208180736, actual_size)
 
     @patch.object(linux, "run_cmd")
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")

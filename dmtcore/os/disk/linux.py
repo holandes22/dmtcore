@@ -136,7 +136,7 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
             device_filepath = os.path.join("/", "dev", device_name)
             size = self._extract_size_from_fdisk(device_filepath)
             major_minor = get_major_minor(device_filepath)
-            hctl = self.get_hctl(device_name)
+            hctl = None
             entry = DiskEntry(device_name, device_filepath, size, major_minor, hctl)
             entry.mp_details = detail
             entry.path_groups = ldm.get_path_group_entries(detail.alias)
@@ -172,12 +172,12 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
         return  re.compile("^\w+\d+$").match(device_name) is not None
 
     def _extract_size_from_fdisk(self, device_filepath):
-        """/sys/block/sda/device/block/sda
+        """/dev/sd* or /dev/mapper/mpath*
         :returns: The size in bytes of the specified device
         :rtype: int or None if an error occured obtaining the value
         """
         #parse Disk /dev/sda: 8185 MB, 8185184256 bytes
-        dev_re = re.compile("^Disk\s\/dev\/sd.*:")
+        dev_re = re.compile("^Disk\s\/dev\/(sd|mapper\/).*:")
         for line in run_cmd(SIZE_FROM_FDISK + [device_filepath]).splitlines():
             if dev_re.match(line) is not None:
                 size = line.split(",")[1].split()[0]
