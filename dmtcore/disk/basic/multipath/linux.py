@@ -20,7 +20,7 @@ class LinuxMultipathDisk(MultipathDisk):
         self.path_groups = []
         for path_group_entry in self.path_group_entries:
             paths = [LinuxPath(path_entry) for path_entry in path_group_entry.paths]
-            self.path_groups.extend(LinuxPathGroup(paths, path_group_entry))
+            self.path_groups.append(LinuxPathGroup(paths, path_group_entry))
             self.paths.extend(paths)
 
 
@@ -40,4 +40,5 @@ class LinuxPathGroup(PathGroup):
         self.state = linux_path_group_entry.state
         self.priority = linux_path_group_entry.priority
         self.selector = linux_path_group_entry.selector
-        self.repeat_count = linux_path_group_entry.repeat_count
+        self.count = linux_path_group_entry.count
+        """Repeat count"""

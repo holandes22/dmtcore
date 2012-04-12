@@ -84,10 +84,10 @@ class MultipathDisk(Disk):
         return self.paths
 
     def get_path_count(self):
-        return len(self.paths)
+        return len(self.get_paths())
 
     def get_active_path_count(self):
-        return len([path for path in self.paths if path.is_active()])
+        return len([path for path in self.get_paths() if path.is_active()])
 
 
 class Path(object):
@@ -100,7 +100,7 @@ class Path(object):
         """Physical path state"""
 
     def is_active(self):
-        return self.state == 'active'
+        return self.physical_state == 'active'
 
 
 class PathGroup(object):
