@@ -63,7 +63,6 @@ class MultipathDisk(Disk):
         super(MultipathDisk, self).__init__(disk_entry)
         self.paths = None
         self.path_groups = None
-        self._generate_paths()
 
     def _generate_paths(self):
         """
@@ -75,9 +74,13 @@ class MultipathDisk(Disk):
         """
         :return: A list of :py:class:`PathGroup` objects.
         """
+        if not self.path_groups:
+            self._generate_paths()
         return self.path_groups
 
     def get_paths(self):
+        if not self.paths:
+            self._generate_paths()
         return self.paths
 
     def get_path_count(self):
@@ -93,10 +96,8 @@ class Path(object):
     """
 
     def __init__(self, path_entry):
-        self.state = path_entry.state
+        self.physical_state = path_entry.physical_state
         """Physical path state"""
-        self.mapper_path_state = path_entry.mapper_path_state
-        """Mapper path state. e.g. DM on Linux"""
 
     def is_active(self):
         return self.state == 'active'
