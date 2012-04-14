@@ -12,6 +12,9 @@ FAKE_FDISK_GOOD_OUTPUT = """
 Disk /dev/sda: 8185 MB, 8185184256 bytes
 255 heads, 63 sectors/track, 995 cylinders
 Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x0001ab30
 
    Device Boot      Start         End      Blocks   Id  System
 /dev/sda1   *           1          13      104391   83  Linux
@@ -174,15 +177,24 @@ class TestLinuxDiskDeviceQueries(unittest.TestCase):
         self.assertFalse(dq._device_name_is_partition("/dev/sda1"))
         self.assertFalse(dq._device_name_is_partition("sda1a"))
 
-    @patch.object(linux, "run_cmd")
+    @patch("dmtcore.os.disk.linux.run_cmd")
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")
     def test__extract_size_from_fdisk_good_output(self, _populate_disks_entries_mock, run_cmd_mock):
         run_cmd_mock.return_value = FAKE_FDISK_GOOD_OUTPUT
         dq = LinuxDiskDeviceQueries()
         fake_device_filepath = "/dev/sda"
         actual_size = dq._extract_size_from_fdisk(fake_device_filepath)
-        run_cmd_mock.assert_called_once_with(SIZE_FROM_FDISK + [fake_device_filepath])
+        run_cmd_mock.assert_called_with(SIZE_FROM_FDISK + [fake_device_filepath])
         self.assertEqual(8185184256, actual_size)
+
+    @patch("dmtcore.os.disk.linux.run_cmd")
+    def test_get_disk_identifier(self, run_cmd_mock):
+        run_cmd_mock.return_value = FAKE_FDISK_GOOD_OUTPUT
+        dq = LinuxDiskDeviceQueries()
+        fake_device_filepath = "/dev/sdb"
+        actual_identifier = dq.get_disk_identifier(fake_device_filepath)
+        run_cmd_mock.assert_called_with(SIZE_FROM_FDISK + [fake_device_filepath])
+        self.assertEqual("0x0001ab30", actual_identifier)
 
     @patch.object(linux, "run_cmd")
     @patch.object(LinuxDiskDeviceQueries, "_populate_disks_entries")

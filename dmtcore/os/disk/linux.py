@@ -189,6 +189,15 @@ class LinuxDiskDeviceQueries(DiskDeviceQueries):
                     return None
         return None
 
+    def get_disk_identifier(self, device_filepath):
+        """parse Disk identifier: 0x0001ab30"""
+        id_re = re.compile("^Disk\s+identifier:\s(?P<identifier>\w+)")
+        for line in run_cmd(SIZE_FROM_FDISK + [device_filepath]).splitlines():
+            match = id_re.match(line)
+            if match:
+                return match.group("identifier").strip()
+        return None
+
     def get_hctl(self, device_name):
         try:
             return self.hctl_map[device_name]
