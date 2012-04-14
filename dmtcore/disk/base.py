@@ -47,6 +47,7 @@ class BasicDisk(Disk):
     def __init__(self, disk_entry):
         super(BasicDisk, self).__init__(disk_entry)
         self.partitions = None
+        self.disk_identifier = disk_entry.disk_identifier
 
     def get_partitions(self):
         if getattr(self, 'partitions', None) is None:

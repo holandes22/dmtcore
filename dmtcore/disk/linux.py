@@ -18,5 +18,6 @@ def get_disks():
             # disk is a path of a multi path disk
             continue
         uuid = linux_disk_device_queries.get_uuid(basic_disk_entry.filepath)
+        basic_disk_entry.disk_identifier = linux_disk_device_queries.get_disk_identifier(basic_disk_entry.filepath)
         basic_disks.append(LinuxDisk(basic_disk_entry, uuid, linux_disk_device_queries))
     return basic_disks + multipath_disks
