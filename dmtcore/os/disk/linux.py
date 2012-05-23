@@ -27,7 +27,13 @@ class LinuxDeviceMapper(object):
         mp_disk_details = {}
         for line in run_cmd(MULTIPATH_LIST).splitlines():
             if dm_re.search(line):
-                alias, wwid, sysfs_name, vendor = line.split()[0:4]
+                try:
+                    alias, wwid, sysfs_name, vendor = line.split()[0:4]
+                except ValueError:
+                    # apparently we hit a dead/unmapped device
+                    module_logger.warning('Skipping MP disk details in line {0}'.format(
+                        line))
+                    continue
                 mp_disk_details[alias] = LinuxDMPDiskDetails(
                                                              wwid = wwid.strip("()"),
                                                              vendor = vendor,
