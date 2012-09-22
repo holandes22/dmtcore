@@ -1,8 +1,7 @@
 import platform
 from collections import namedtuple
 
-
-PlatformDetails = namedtuple("PlatformDetails", "architecture,machine,processor,system,version")
+PlatformDetails = namedtuple("PlatformDetails", "architecture,machine,processor,system,hostname,release")
 SUPPORTED_PLATFORMS = [
                        "linux",
                        ]
@@ -20,10 +19,14 @@ def get_os_name():
 
 
 def get_platform_details():
+    # system, node, release, version, machine, processor
+    uname = platform.uname()
+
     return PlatformDetails(
-            architecture=platform.architecture(),
+            architecture=platform.architecture()[0],
+            system=uname[0],
+            hostname=uname[1],
+            release=uname[2],
             machine=platform.machine(),
             processor=platform.processor(),
-            system=platform.system(),
-            version=platform.version()
             )
