@@ -6,10 +6,10 @@ class VolumeManager(object):
 
     def get_physical_volumes(self, name=None):
         pvs = []
-        cmd = ['pvs', '-v', '--separator', '"|"']
+        cmd = ['pvs', '-v', '--separator', '|']
         if name:
             cmd.append(name)
-        for line in run_cmd(cmd).splitlines()[3:]:
+        for line in run_cmd(cmd).strip().splitlines()[2:]:
             pv, vg, fmt, attr, psize, pfree, devsize, uuid = line.strip().split('|')
             pvs.append(PhysicalVolume(lvm=self, name=pv, vg=vg, size=psize, uuid=uuid, device='dev'))
         return pvs

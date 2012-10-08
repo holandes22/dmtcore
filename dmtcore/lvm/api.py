@@ -4,16 +4,16 @@ from dmtcore.os.platimport import platimport
 class VolumeManager(object):
 
     def __init__(self):
-        self.implementor = platimport("dmtcore.disk", "VolumeManager")()
+        self.implementor = platimport("dmtcore.lvm", "VolumeManager")()
 
     def get_physical_volumes(self):
-        self.implementor.get_physical_volumes()
+        return self.implementor.get_physical_volumes()
 
     def get_volume_groups(self):
-        self.implementor.get_volume_groups()
+        return self.implementor.get_volume_groups()
 
     def get_logical_volumes(self):
-        self.implementor.get_logical_volumes()
+        return self.implementor.get_logical_volumes()
 
 
 class PhysicalVolume(object):
