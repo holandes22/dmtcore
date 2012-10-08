@@ -8,6 +8,9 @@ ALL_PVS_OUTPUT = """
     PV|VG|Fmt|Attr|PSize|PFree|DevSize|PV UUID
     /dev/sdd1|data|lvm2|a-|488.00m|72.00m|488.28m|Lqnjui-WoJW-1VcW-O3hT-cUaL-Rkfe-6km7Ll
     /dev/sdd2|data|lvm2|a-|532.00m|532.00m|534.72m|5b25y8-bRvk-m5Nb-rsRK-Wjqf-W34E-Hhpouo
+    /dev/sde1|vg1|lvm2|a-|200.00m|240.00m|241.75m|sde1
+    /dev/sde2||lvm2|a-|200.00m|292.97m|292.97m|sde2
+    /dev/sde3||lvm2|a-|200.00m|488.28m|488.28m|sde3
 """
 
 ONE_PVS_OUTPUT = """
@@ -41,7 +44,7 @@ class TestLinuxLVM(unittest.TestCase):
 
     def test__remove_headings_pvs_all(self):
         lines = self.lvm._remove_headings(ALL_PVS_OUTPUT, 'PV')
-        self.assertEqual(2, len(lines))
+        self.assertEqual(5, len(lines))
         self.assertTrue(all([line.strip().startswith('/dev/') for line in lines]))
 
     def test__remove_headings_pvs_one(self):
@@ -58,12 +61,15 @@ class TestLinuxLVM(unittest.TestCase):
     def test_get_physical_volumes_all(self, run_cmd_mock):
         run_cmd_mock.return_value = ALL_PVS_OUTPUT
         pvs = self.lvm.get_physical_volumes()
-        self.assertEqual(2, len(pvs))
+        self.assertEqual(5, len(pvs))
         expected_pvs = [
                 {'name': '/dev/sdd1', 'vg_name': 'data',
                     'size': '488.00m', 'uuid': 'Lqnjui-WoJW-1VcW-O3hT-cUaL-Rkfe-6km7Ll'},
                 {'name': '/dev/sdd2', 'vg_name': 'data',
                     'size': '532.00m', 'uuid': '5b25y8-bRvk-m5Nb-rsRK-Wjqf-W34E-Hhpouo'},
+                {'name': '/dev/sde1', 'vg_name': 'vg1', 'size': '200.00m', 'uuid': 'sde1'},
+                {'name': '/dev/sde2', 'vg_name': None, 'size': '200.00m', 'uuid': 'sde2'},
+                {'name': '/dev/sde3', 'vg_name': None, 'size': '200.00m', 'uuid': 'sde3'},
                 ]
         for expected_pv, pv in map(None, expected_pvs, pvs):
             for attr in expected_pv:

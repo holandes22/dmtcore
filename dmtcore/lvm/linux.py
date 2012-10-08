@@ -25,6 +25,8 @@ class VolumeManager(object):
             cmd.append(name)
         for line in self._remove_headings(run_cmd(cmd).strip(), 'PV'):
             pv, vg, fmt, attr, psize, pfree, devsize, uuid = line.strip().split('|')
+            if vg == '':
+                vg = None
             pvs.append(PhysicalVolume(lvm=self, name=pv, vg_name=vg,
                 size=psize, uuid=uuid, device='dev'))
         return pvs

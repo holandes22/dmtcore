@@ -27,7 +27,9 @@ class PhysicalVolume(object):
         self.device = device
 
     def get_volume_group(self):
-        return self.lvm.get_volume_groups(name=self.vg_name)[0]
+        if self.vg_name is not None:
+            return self.lvm.get_volume_groups(name=self.vg_name)[0]
+        return None
 
     def get_free_size(self):
         return self.lvm.get_pv_free_size(pv=self.name)
