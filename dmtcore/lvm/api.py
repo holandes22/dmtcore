@@ -44,10 +44,10 @@ class VolumeGroup(object):
         self.uuid = uuid
 
     def get_physical_volumes(self):
-        return self.lvm.get_physical_volumes(name=self.name)
+        return self.lvm.get_pvs_by_vg(name=self.name)
 
     def get_logical_volumes(self):
-        return self.lvm.get_logical_volumes(name=self.name)
+        return self.lvm.get_lvs_by_vg(name=self.name)
 
     def get_free_size(self):
         return self.lvm.get_vg_free_size(vg=self.name)
@@ -55,9 +55,10 @@ class VolumeGroup(object):
 
 class LogicalVolume(object):
 
-    def __init__(self, lvm, name, vg, size, uuid):
+    def __init__(self, lvm, name, vg_name, size, uuid):
         self.lvm = lvm
         self.name = name
+        self.vg_name = vg_name
         self.size = size
         self.uuid = uuid
 

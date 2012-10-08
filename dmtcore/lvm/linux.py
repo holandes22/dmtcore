@@ -36,7 +36,6 @@ class VolumeManager(object):
         cmd = ['vgs'] + PARSE_OPTS
         if name:
             cmd.append(name)
-        after_header = False
         for line in self._remove_headings(run_cmd(cmd).strip(), 'VG'):
             # VG|Attr|Ext|#PV|#LV|#SN|VSize|VFree|VG UUID
             vg, attr, ext, npv, nlv, nsn, size, free, uuid = line.strip().split('|')
@@ -44,4 +43,13 @@ class VolumeManager(object):
         return vgs
 
     def get_logical_volumes(self, name=None):
-        return []
+        lvs = []
+        cmd = ['lvs'] + PARSE_OPTS
+        if name:
+            cmd.append(name)
+        for line in self._remove_headings(run_cmd(cmd).strip(), 'LV'):
+            #  LV|VG|#Seg|Attr|LSize|Maj|Min|KMaj|KMin|Origin|Snap%|Move|Copy%|Log|Convert|LV UUID
+            lv, vg, nseg, attr, size, maj, _min, kmaj, kmin, orig,\
+                snap_per, move, copy_per, log, convert, uuid  = line.strip().split('|')
+            lvs.append(LogicalVolume(lvm=self, name=lv, vg_name=vg, size=size, uuid=uuid))
+        return lvs

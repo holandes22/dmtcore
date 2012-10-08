@@ -35,6 +35,19 @@ ONE_VGS_OUTPUT = """
   data|wz--n-|4.00m|2|2|0|1020.00m|604.00m|DHbiyX-iY8b-Dr5t-3UYq-5kLp-3NiJ-qFFPYX
 """
 
+ALL_LVS_OUTPUT = """
+    Finding all logical volumes
+  LV|VG|#Seg|Attr|LSize|Maj|Min|KMaj|KMin|Origin|Snap%|Move|Copy%|Log|Convert|LV UUID
+  lv1|data|1|-wi-a-|208.00m|-1|-1|252|2|||||||ib61dW-ePez-PLnN-u5pP-77PT-XygP-GNcjT1
+  lv2|data|1|-wi-a-|208.00m|-1|-1|252|3|||||||5vm7vS-6O9C-A9jY-WbGP-Zaq5-kLGg-Q5URp6
+  share|vg1|1|-wi-a-|104.00m|-1|-1|252|4|||||||XaSdDP-zyHl-p6i9-PWLX-pY30-jtuY-Ixvyn2
+"""
+
+ONE_LVS_OUTPUT = """
+    Finding all logical volumes
+  LV|VG|#Seg|Attr|LSize|Maj|Min|KMaj|KMin|Origin|Snap%|Move|Copy%|Log|Convert|LV UUID
+  lv1|data|1|-wi-a-|208.00m|-1|-1|252|2|||||||ib61dW-ePez-PLnN-u5pP-77PT-XygP-GNcjT1
+"""
 
 class TestLinuxLVM(unittest.TestCase):
 
@@ -56,6 +69,15 @@ class TestLinuxLVM(unittest.TestCase):
         lines = self.lvm._remove_headings(ALL_VGS_OUTPUT, 'VG')
         self.assertEqual(2, len(lines))
         self.assertTrue(all([line.strip().startswith('data') or line.strip().startswith('vg1') for line in lines]))
+
+    def test__remove_headings_lvs_all(self):
+        lines = self.lvm._remove_headings(ALL_LVS_OUTPUT, 'LV')
+        self.assertEqual(3, len(lines))
+        self.assertTrue(all([
+            line.strip().startswith('lv1') or
+            line.strip().startswith('lv2') or
+            line.strip().startswith('share') for line in lines
+            ]))
 
     @patch("dmtcore.lvm.linux.run_cmd")
     def test_get_physical_volumes_all(self, run_cmd_mock):
@@ -117,6 +139,39 @@ class TestLinuxLVM(unittest.TestCase):
         for vg in vgs:
             for attr in expected_vg:
                 self.assertEqual(getattr(vg, attr, None), expected_vg[attr])
+
+    @patch("dmtcore.lvm.linux.run_cmd")
+    def test_get_logical_volumes_all(self, run_cmd_mock):
+        run_cmd_mock.return_value = ALL_LVS_OUTPUT
+        lvs = self.lvm.get_logical_volumes()
+        self.assertEqual(3, len(lvs))
+
+        expected_lvs = [
+                {'name': 'lv1', 'vg_name': 'data', 'size': '208.00m',
+                    'uuid': 'ib61dW-ePez-PLnN-u5pP-77PT-XygP-GNcjT1'},
+                {'name': 'lv2', 'vg_name': 'data', 'size': '208.00m',
+                    'uuid': '5vm7vS-6O9C-A9jY-WbGP-Zaq5-kLGg-Q5URp6'},
+                {'name': 'share', 'vg_name': 'vg1', 'size': '104.00m',
+                    'uuid': 'XaSdDP-zyHl-p6i9-PWLX-pY30-jtuY-Ixvyn2'},
+                ]
+
+        for expected_lv, lv in map(None, expected_lvs, lvs):
+            for attr in expected_lv:
+                self.assertEqual(getattr(lv, attr, None), expected_lv[attr])
+
+    @patch("dmtcore.lvm.linux.run_cmd")
+    def test_get_logical_volumes_one(self, run_cmd_mock):
+        run_cmd_mock.return_value = ONE_LVS_OUTPUT
+        lvs = self.lvm.get_logical_volumes()
+        self.assertEqual(1, len(lvs))
+        expected_lv = {
+                'name': 'lv1', 'vg_name': 'data', 'size': '208.00m',
+                'uuid': 'ib61dW-ePez-PLnN-u5pP-77PT-XygP-GNcjT1'
+                }
+
+        for lv in lvs:
+            for attr in expected_lv:
+                self.assertEqual(getattr(lv, attr, None), expected_lv[attr])
 
 
 class TestPhysicalVolumeLinuxLVM(unittest.TestCase):
